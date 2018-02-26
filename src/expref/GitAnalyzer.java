@@ -3,6 +3,7 @@ package expref;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.time.Instant;
 
 import org.antlr.v4.runtime.Token;
 import org.eclipse.jgit.api.Git;
@@ -112,7 +113,7 @@ public class GitAnalyzer implements AutoCloseable {
 					try (RevWalk rev = new RevWalk(repo)) {
 						RevCommit commit = rev.parseCommit(repo.resolve("HEAD"));
 						gen.writeStringField("ObjectId", commit.getId().name());
-						gen.writeNumberField("CommitTime", commit.getCommitTime());
+						gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
 						RevTree tree = commit.getTree();
 						try (TreeWalk walk = new TreeWalk(repo)) {
 							walk.addTree(tree);
@@ -155,6 +156,10 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 	}
 	
+	private static String epochToISO(int epoch) {
+		return Instant.ofEpochSecond(epoch).toString();		
+	}
+	
 	public void processFile(Repository repo, String path, ObjectId obj, int lastModified) throws IOException {
 		ObjectLoader reader = repo.newObjectReader().open(obj); 
 		byte[] content = reader.getCachedBytes();
@@ -164,7 +169,7 @@ public class GitAnalyzer implements AutoCloseable {
 		int counter = 0;
 		gen.writeObjectFieldStart(path);
 		gen.writeStringField("ObjectId", obj.name());
-		gen.writeNumberField("lastModified", lastModified);
+		gen.writeStringField("lastModified", epochToISO(lastModified));
 		int commentCount = 0;
 		for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
 			gen.writeObjectFieldStart(Integer.toString(counter++));
