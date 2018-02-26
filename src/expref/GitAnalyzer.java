@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.antlr.v4.runtime.Token;
 import org.eclipse.jgit.api.Git;
@@ -49,8 +51,10 @@ public class GitAnalyzer implements AutoCloseable {
 	}
 
 	private JsonGenerator gen;
+	private HashMap<FileType, Counter> counters;
 
 	public GitAnalyzer() throws IOException {
+		counters = new HashMap<>();
 		gen = new JsonFactory().createGenerator(System.out);
 		gen.useDefaultPrettyPrinter();
 		gen.writeStartObject();
@@ -134,6 +138,11 @@ public class GitAnalyzer implements AutoCloseable {
 					} finally {
 						gen.writeEndObject();
 					}
+					gen.writeObjectFieldStart("FileTypes");
+					for (Map.Entry<FileType, Counter> entry: counters.entrySet()) {
+						gen.writeNumberField(entry.getKey().name(), entry.getValue().getCount());
+					}
+					gen.writeEndObject();
 					gen.writeNumberField("ElapsedTime", System.currentTimeMillis() - startTime);
 				} catch (IncorrectObjectTypeException e) {
 					System.err.println("Error: " + target + " is not a revision.");
@@ -176,21 +185,33 @@ public class GitAnalyzer implements AutoCloseable {
 		FileType t = FileType.getFileType(path);
 		CommentReader lexer = FileType.createCommentReader(t, content);
 		if (lexer == null) return;
-		int counter = 0;
+		counters.computeIfAbsent(t, type -> new Counter()).increment();
 		gen.writeObjectFieldStart(path);
 		gen.writeStringField("ObjectId", obj.name());
-		gen.writeStringField("lastModified", epochToISO(lastModified));
+		gen.writeStringField("LastModified", epochToISO(lastModified));
+		gen.writeStringField("FileType", t.name());
 		int commentCount = 0;
 		for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
-			gen.writeObjectFieldStart(Integer.toString(counter++));
+			gen.writeObjectFieldStart(Integer.toString(commentCount++));
 			gen.writeObjectField("Text", token.getText());
 			gen.writeObjectField("Line", token.getLine());
 			gen.writeObjectField("CharPositionInLine", token.getCharPositionInLine());
 			gen.writeEndObject();
-			commentCount++;
 		}
 		gen.writeNumberField("CommentCount", commentCount);
 		gen.writeEndObject();
+	}
+	
+	private static class Counter {
+		private int value;
+		
+		public void increment() {
+			value++;
+		}
+		
+		public int getCount() {
+			return value;
+		}
 	}
 
 }
