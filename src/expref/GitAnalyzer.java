@@ -8,7 +8,9 @@ import java.time.Instant;
 import org.antlr.v4.runtime.Token;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
@@ -30,13 +32,16 @@ public class GitAnalyzer implements AutoCloseable {
 	 * @param args specify directories.
 	 */
 	public static void main(String[] args) { 
+		if (args.length == 0 || args.length > 2) {
+			System.err.println("Usage: path/to/.git [tag/commitId]");
+			return;
+		}
 		try (GitAnalyzer analyzer = new GitAnalyzer()) {
-			for (String arg: args) {
-				File dir = new File(arg);
-				File gitDir = ensureGitDir(dir);
-				if (gitDir != null) {
-					analyzer.parseGitRepository(gitDir);
-				}
+			File dir = new File(args[0]);
+			String target = (args.length == 2) ? args[1]: "HEAD";
+			File gitDir = ensureGitDir(dir);
+			if (gitDir != null) {
+				analyzer.parseGitRepository(gitDir, target);
 			}
 		} catch (IOException e) {
 			 e.printStackTrace();
@@ -97,44 +102,47 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 	}
 
-	public void parseGitRepository(File gitDir) {
+	public void parseGitRepository(File gitDir, String target) {
 		File dir = ensureGitDir(gitDir);
 		if (dir == null) return;
 
 		FileRepositoryBuilder b = new FileRepositoryBuilder();
 		b.setGitDir(gitDir);
 		try (Repository repo = b.build()) {
-			gen.writeObjectFieldStart(makeRepoName(gitDir));
-			gen.writeObjectFieldStart("HEAD");
 			try (Git git = new Git(repo)) {
-//				List<Ref> tags = git.tagList().call();
-//				for (Ref tag: tags) {
-					//startTag(tag);
-					try (RevWalk rev = new RevWalk(repo)) {
-						RevCommit commit = rev.parseCommit(repo.resolve("HEAD"));
-						gen.writeStringField("ObjectId", commit.getId().name());
-						gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
-						RevTree tree = commit.getTree();
-						try (TreeWalk walk = new TreeWalk(repo)) {
-							walk.addTree(tree);
-							walk.setRecursive(true);
-							while (walk.next()) {
-								String path = new String(walk.getRawPath());
-								if (FileType.isSupported(path)) {
-									int lastModified = lastModified(git, path);
-									processFile(repo, path, walk.getObjectId(0), lastModified);
-								}
+				try (RevWalk rev = new RevWalk(repo)) {
+					RevCommit commit = rev.parseCommit(repo.resolve(target));
+					gen.writeStringField("Repository", makeRepoName(gitDir));
+					gen.writeStringField("Revision", target);
+					gen.writeStringField("ObjectId", commit.getId().name());
+					gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
+					gen.writeObjectFieldStart("Files");
+					RevTree tree = commit.getTree();
+					try (TreeWalk walk = new TreeWalk(repo)) {
+						walk.addTree(tree);
+						walk.setRecursive(true);
+						while (walk.next()) {
+							String path = new String(walk.getRawPath());
+							if (FileType.isSupported(path)) {
+								int lastModified = lastModified(git, path);
+								processFile(repo, path, walk.getObjectId(0), lastModified);
 							}
 						}
-					} catch (IncorrectObjectTypeException e) {
+					} catch (IOException e) {
 						e.printStackTrace();
-						// A tag may be assigend to a file.
-						// Ignore the exception to process the other tags.
+					} finally {
+						gen.writeEndObject();
 					}
-//				}
+				} catch (IncorrectObjectTypeException e) {
+					System.err.println("Error: " + target + " is not a revision.");
+					// A tag may be assigend to a file.
+					// Ignore the exception to process the other tags.
+				} catch (AmbiguousObjectException e) {
+					System.err.println("Error: " + target + " is not unique in the repository.");
+				} catch (RevisionSyntaxException e) {
+					System.err.println("Error: " + target + " is not a valid revision.");
+				}
 			}
-			gen.writeEndObject();
-			gen.writeEndObject();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
