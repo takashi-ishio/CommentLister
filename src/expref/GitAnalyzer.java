@@ -13,6 +13,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
+import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
@@ -57,7 +58,6 @@ public class GitAnalyzer implements AutoCloseable {
 		counters = new HashMap<>();
 		gen = new JsonFactory().createGenerator(System.out);
 		gen.useDefaultPrettyPrinter();
-		gen.writeStartObject();
 	}
 	
 	@Override
@@ -116,34 +116,41 @@ public class GitAnalyzer implements AutoCloseable {
 		try (Repository repo = b.build()) {
 			try (Git git = new Git(repo)) {
 				try (RevWalk rev = new RevWalk(repo)) {
-					RevCommit commit = rev.parseCommit(repo.resolve(target));
-					gen.writeStringField("Repository", makeRepoName(gitDir));
-					gen.writeStringField("Revision", target);
-					gen.writeStringField("ObjectId", commit.getId().name());
-					gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
-					gen.writeObjectFieldStart("Files");
-					RevTree tree = commit.getTree();
-					try (TreeWalk walk = new TreeWalk(repo)) {
-						walk.addTree(tree);
-						walk.setRecursive(true);
-						while (walk.next()) {
-							String path = new String(walk.getRawPath());
-							if (FileType.isSupported(path)) {
-								int lastModified = lastModified(git, path);
-								processFile(repo, path, walk.getObjectId(0), lastModified);
+					AnyObjectId objId = repo.resolve(target);
+					if (objId != null) {
+						RevCommit commit = rev.parseCommit(objId);
+						gen.writeStartObject();
+						gen.writeStringField("Repository", makeRepoName(gitDir));
+						gen.writeStringField("Revision", target);
+						gen.writeStringField("ObjectId", commit.getId().name());
+						gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
+						gen.writeObjectFieldStart("Files");
+						RevTree tree = commit.getTree();
+						try (TreeWalk walk = new TreeWalk(repo)) {
+							walk.addTree(tree);
+							walk.setRecursive(true);
+							while (walk.next()) {
+								String path = new String(walk.getRawPath());
+								if (FileType.isSupported(path)) {
+									int lastModified = lastModified(git, path);
+									processFile(repo, path, walk.getObjectId(0), lastModified);
+								}
 							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						} finally {
+							gen.writeEndObject();
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} finally {
+						gen.writeObjectFieldStart("FileTypes");
+						for (Map.Entry<FileType, Counter> entry: counters.entrySet()) {
+							gen.writeNumberField(entry.getKey().name(), entry.getValue().getCount());
+						}
 						gen.writeEndObject();
+						gen.writeNumberField("ElapsedTime", System.currentTimeMillis() - startTime);
+						gen.writeEndObject();
+					} else {
+						System.err.println("Error: " + target + " is not a commit ID.");
 					}
-					gen.writeObjectFieldStart("FileTypes");
-					for (Map.Entry<FileType, Counter> entry: counters.entrySet()) {
-						gen.writeNumberField(entry.getKey().name(), entry.getValue().getCount());
-					}
-					gen.writeEndObject();
-					gen.writeNumberField("ElapsedTime", System.currentTimeMillis() - startTime);
 				} catch (IncorrectObjectTypeException e) {
 					System.err.println("Error: " + target + " is not a revision.");
 					// A tag may be assigend to a file.
