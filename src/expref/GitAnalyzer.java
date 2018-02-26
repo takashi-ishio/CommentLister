@@ -106,6 +106,7 @@ public class GitAnalyzer implements AutoCloseable {
 		File dir = ensureGitDir(gitDir);
 		if (dir == null) return;
 
+		long startTime = System.currentTimeMillis();
 		FileRepositoryBuilder b = new FileRepositoryBuilder();
 		b.setGitDir(gitDir);
 		try (Repository repo = b.build()) {
@@ -133,6 +134,7 @@ public class GitAnalyzer implements AutoCloseable {
 					} finally {
 						gen.writeEndObject();
 					}
+					gen.writeNumberField("ElapsedTime", System.currentTimeMillis() - startTime);
 				} catch (IncorrectObjectTypeException e) {
 					System.err.println("Error: " + target + " is not a revision.");
 					// A tag may be assigend to a file.
