@@ -110,7 +110,10 @@ public class GitAnalyzer implements AutoCloseable {
 //				for (Ref tag: tags) {
 					//startTag(tag);
 					try (RevWalk rev = new RevWalk(repo)) {
-						RevTree tree = rev.parseTree(repo.resolve("HEAD"));
+						RevCommit commit = rev.parseCommit(repo.resolve("HEAD"));
+						gen.writeStringField("ObjectId", commit.getId().name());
+						gen.writeNumberField("CommitTime", commit.getCommitTime());
+						RevTree tree = commit.getTree();
 						try (TreeWalk walk = new TreeWalk(repo)) {
 							walk.addTree(tree);
 							walk.setRecursive(true);
@@ -160,7 +163,7 @@ public class GitAnalyzer implements AutoCloseable {
 		if (lexer == null) return;
 		int counter = 0;
 		gen.writeObjectFieldStart(path);
-		gen.writeStringField("ObjectId", obj.toString());
+		gen.writeStringField("ObjectId", obj.name());
 		gen.writeNumberField("lastModified", lastModified);
 		int commentCount = 0;
 		for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
