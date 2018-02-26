@@ -5,10 +5,13 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 
 import org.antlr.v4.runtime.Token;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -102,7 +105,7 @@ public class GitAnalyzer implements AutoCloseable {
 		try (Repository repo = b.build()) {
 			gen.writeObjectFieldStart(makeRepoName(gitDir));
 			gen.writeObjectFieldStart("HEAD");
-//			try (Git git = new Git(repo)) {
+			try (Git git = new Git(repo)) {
 //				List<Ref> tags = git.tagList().call();
 //				for (Ref tag: tags) {
 					//startTag(tag);
@@ -112,7 +115,11 @@ public class GitAnalyzer implements AutoCloseable {
 							walk.addTree(tree);
 							walk.setRecursive(true);
 							while (walk.next()) {
-								processFile(repo, walk.getRawPath(), walk.getObjectId(0));
+								String path = new String(walk.getRawPath());
+								if (FileType.isSupported(path)) {
+									int lastModified = lastModified(git, path);
+									processFile(repo, path, walk.getObjectId(0), lastModified);
+								}
 							}
 						}
 					} catch (IncorrectObjectTypeException e) {
@@ -121,9 +128,7 @@ public class GitAnalyzer implements AutoCloseable {
 						// Ignore the exception to process the other tags.
 					}
 //				}
-//			} catch (GitAPIException e) {
-//				e.printStackTrace();
-//			}
+			}
 			gen.writeEndObject();
 			gen.writeEndObject();
 		} catch (IOException e) {
@@ -131,25 +136,43 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 	}
 	
-	public void processFile(Repository repo, byte[] path, ObjectId obj) throws IOException {
-		String filename = new String(path);
-		if (FileType.isSupported(filename)) {
-			ObjectLoader reader = repo.newObjectReader().open(obj); 
-			byte[] content = reader.getCachedBytes();
-			FileType t = FileType.getFileType(filename);
-			CommentReader lexer = FileType.createCommentReader(t, content);
-			if (lexer == null) return;
-			int counter = 0;
-			gen.writeObjectFieldStart(filename);
-			for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
-				gen.writeObjectFieldStart(Integer.toString(counter++));
-				gen.writeObjectField("Text", token.getText());
-				gen.writeObjectField("Line", token.getLine());
-				gen.writeObjectField("CharPositionInLine", token.getCharPositionInLine());
-				gen.writeEndObject();
+	/**
+	 * Compute the last modified time of a given file path in a repository. 
+	 * @return the seconds from epoch time.  0 if the time is unavailable.
+	 */
+	private int lastModified(Git git, String path) {
+		try {
+			int lastModified = 0;
+			for (RevCommit c: git.log().addPath(path).call()) {
+				lastModified = Math.max(lastModified, c.getCommitTime());
 			}
-			gen.writeEndObject();
+			return lastModified;
+		} catch (GitAPIException e) {
+			return 0;
 		}
+	}
+	
+	public void processFile(Repository repo, String path, ObjectId obj, int lastModified) throws IOException {
+		ObjectLoader reader = repo.newObjectReader().open(obj); 
+		byte[] content = reader.getCachedBytes();
+		FileType t = FileType.getFileType(path);
+		CommentReader lexer = FileType.createCommentReader(t, content);
+		if (lexer == null) return;
+		int counter = 0;
+		gen.writeObjectFieldStart(path);
+		gen.writeStringField("ObjectId", obj.toString());
+		gen.writeNumberField("lastModified", lastModified);
+		int commentCount = 0;
+		for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
+			gen.writeObjectFieldStart(Integer.toString(counter++));
+			gen.writeObjectField("Text", token.getText());
+			gen.writeObjectField("Line", token.getLine());
+			gen.writeObjectField("CharPositionInLine", token.getCharPositionInLine());
+			gen.writeEndObject();
+			commentCount++;
+		}
+		gen.writeNumberField("CommentCount", commentCount);
+		gen.writeEndObject();
 	}
 
 }
