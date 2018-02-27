@@ -18,10 +18,16 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -132,7 +138,7 @@ public class GitAnalyzer implements AutoCloseable {
 							while (walk.next()) {
 								String path = new String(walk.getRawPath());
 								if (FileType.isSupported(path)) {
-									int lastModified = lastModified(git, path);
+									int lastModified =  lastModified(repo, objId, path);//lastModified(git, repo, commit, path); //
 									processFile(repo, path, walk.getObjectId(0), lastModified);
 								}
 							}
@@ -167,17 +173,21 @@ public class GitAnalyzer implements AutoCloseable {
 	}
 	
 	/**
-	 * Compute the last modified time of a given file path in a repository. 
+	 * Compute the last modified time of a given file path in a repository.
+	 * The implementation extracts the latest commit that modifies the specified file.  
 	 * @return the seconds from epoch time.  0 if the time is unavailable.
 	 */
-	private int lastModified(Git git, String path) {
-		try {
-			int lastModified = 0;
-			for (RevCommit c: git.log().addPath(path).call()) {
-				lastModified = Math.max(lastModified, c.getCommitTime());
+	private int lastModified(Repository repo, AnyObjectId target, String path) {
+		try (RevWalk rev = new RevWalk(repo)) {
+			rev.markStart(repo.parseCommit(target));
+			rev.setTreeFilter(AndTreeFilter.create(TreeFilter.ANY_DIFF, 
+					                               PathFilter.create(path)));
+			rev.setRevFilter(MaxCountRevFilter.create(1));
+			for (RevCommit c: rev) {
+				return c.getCommitTime();
 			}
-			return lastModified;
-		} catch (GitAPIException e) {
+			return 0;
+		} catch (IOException e) {
 			return 0;
 		}
 	}
