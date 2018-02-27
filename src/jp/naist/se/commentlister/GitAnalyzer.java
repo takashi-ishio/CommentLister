@@ -100,6 +100,9 @@ public class GitAnalyzer implements AutoCloseable {
 		return null;
 	}
 	
+	/**
+	 * Make a short git repository name ("myApp/.git" or "myApp.git").
+	 */
 	private String makeRepoName(File gitDir) {
 		if (gitDir.getName().equals(".git")) {
 			return gitDir.getParentFile().getName() + "/.git";
@@ -108,6 +111,10 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * @param gitDir is a .git directory.
+	 * @param target is a revision.
+	 */
 	public void parseGitRepository(File gitDir, String target) {
 		File dir = ensureGitDir(gitDir);
 		if (dir == null) return;
@@ -128,7 +135,7 @@ public class GitAnalyzer implements AutoCloseable {
 					gen.writeObjectFieldStart("Files");
 					RevTree tree = commit.getTree();
 					
-					try (RevWalk revForLastModified = new RevWalk(repo)) {
+					try (RevWalk revForLastModified = new RevWalk(repo)) { // Reuse a single walk object for performance
 						try (TreeWalk walk = new TreeWalk(repo)) {
 							walk.addTree(tree);
 							walk.setRecursive(true);
@@ -157,8 +164,6 @@ public class GitAnalyzer implements AutoCloseable {
 				}
 			} catch (IncorrectObjectTypeException e) {
 				System.err.println("Error: " + target + " is not a revision.");
-				// A tag may be assigend to a file.
-				// Ignore the exception to process the other tags.
 			} catch (AmbiguousObjectException e) {
 				System.err.println("Error: " + target + " is not unique in the repository.");
 			} catch (RevisionSyntaxException e) {
@@ -190,6 +195,11 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 	}
 	
+	/**
+	 * Translate epoch seconds (Git Commit Time) into an ISO-style string
+	 * @param epoch
+	 * @return
+	 */
 	private static String epochToISO(int epoch) {
 		return Instant.ofEpochSecond(epoch).toString();		
 	}
@@ -217,7 +227,12 @@ public class GitAnalyzer implements AutoCloseable {
 		gen.writeEndObject();
 	}
 	
+	
+	/**
+	 * Internal class to count the numbers of files
+	 */
 	private static class Counter {
+		
 		private int value;
 		
 		public void increment() {
