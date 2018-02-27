@@ -127,20 +127,23 @@ public class GitAnalyzer implements AutoCloseable {
 					gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
 					gen.writeObjectFieldStart("Files");
 					RevTree tree = commit.getTree();
-					try (TreeWalk walk = new TreeWalk(repo)) {
-						walk.addTree(tree);
-						walk.setRecursive(true);
-						while (walk.next()) {
-							String path = new String(walk.getRawPath());
-							if (FileType.isSupported(path)) {
-								int lastModified =  lastModified(repo, objId, path);
-								processFile(repo, path, walk.getObjectId(0), lastModified);
+					
+					try (RevWalk revForLastModified = new RevWalk(repo)) {
+						try (TreeWalk walk = new TreeWalk(repo)) {
+							walk.addTree(tree);
+							walk.setRecursive(true);
+							while (walk.next()) {
+								String path = new String(walk.getRawPath());
+								if (FileType.isSupported(path)) {
+									int lastModified =  lastModified(revForLastModified, repo, objId, path);
+									processFile(repo, path, walk.getObjectId(0), lastModified);
+								}
 							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						} finally {
+							gen.writeEndObject();
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} finally {
-						gen.writeEndObject();
 					}
 					gen.writeObjectFieldStart("FileTypes");
 					for (Map.Entry<FileType, Counter> entry: counters.entrySet()) {
@@ -165,14 +168,15 @@ public class GitAnalyzer implements AutoCloseable {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Compute the last modified time of a given file path in a repository.
 	 * The implementation extracts the latest commit that modifies the specified file.  
 	 * @return the seconds from epoch time.  0 if the time is unavailable.
 	 */
-	private int lastModified(Repository repo, AnyObjectId target, String path) {
-		try (RevWalk rev = new RevWalk(repo)) {
+	private int lastModified(RevWalk rev, Repository repo, AnyObjectId target, String path) {
+		try {
+			rev.reset();
 			rev.markStart(repo.parseCommit(target));
 			rev.setTreeFilter(AndTreeFilter.create(TreeFilter.ANY_DIFF, 
 					                               PathFilter.create(path)));
