@@ -9,11 +9,11 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.Token;
 
-import expref.lexer.CPP14Lexer;
-import expref.lexer.CSharpLexer;
-import expref.lexer.ECMAScriptLexer;
-import expref.lexer.Java8Lexer;
-import expref.lexer.Python3Lexer;
+import jp.naist.se.commentlister.lexer.CPP14Lexer;
+import jp.naist.se.commentlister.lexer.CSharpLexer;
+import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
+import jp.naist.se.commentlister.lexer.Java8Lexer;
+import jp.naist.se.commentlister.lexer.Python3Lexer;
 
 
 public enum FileType {
