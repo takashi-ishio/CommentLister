@@ -42,7 +42,7 @@ public class GitAnalyzer implements AutoCloseable {
 			return;
 		}
 		try (GitAnalyzer analyzer = new GitAnalyzer()) {
-			File dir = new File(args[0]);
+			File dir = new File(args[0]).getCanonicalFile();
 			String target = (args.length == 2) ? args[1]: "HEAD";
 			File gitDir = ensureGitDir(dir);
 			if (gitDir != null) {
