@@ -1,5 +1,13 @@
 # Comment Lister: Code Comment Listing Tool for Git repository
 
+## Build
+
+The project uses Maven.  
+You can make a runnable jar `CommentLister.jar` by executing `mvn package`. 
+
+
+## Usage
+
 This tool automatically extracts comment in source code stored in a git repository.
 The tool takes a file path to a git repository to be analyzed, for example:
 
