@@ -1,4 +1,4 @@
-package expref;
+package jp.naist.se.commentlister;
 
 import java.io.File;
 import java.io.FilenameFilter;

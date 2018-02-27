@@ -1,4 +1,4 @@
-package expref;
+package jp.naist.se.commentlister;
 
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Token;

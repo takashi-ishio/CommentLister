@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>expref</groupId>
-  <artifactId>expref</artifactId>
+  <groupId>jp.naist.se</groupId>
+  <artifactId>CommentLister</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -22,7 +22,7 @@
         <version>4.7</version>
 		<configuration>
 			<sourceDirectory>grammars</sourceDirectory>
-			<arguments><argument>-package</argument><argument>expref.lexer</argument></arguments>
+			<arguments><argument>-package</argument><argument>jp.naist.se.commentlister.lexer</argument></arguments>
 			<visitor>true</visitor>
 			<listener>true</listener>
 			<encoding>UTF-8</encoding>
@@ -41,13 +41,14 @@
 	    <artifactId>maven-assembly-plugin</artifactId>
 	    <version>3.0.0</version>
 	    <configuration>
-	        <finalName>expref</finalName>
+	        <finalName>CommentLister</finalName>
+	        <appendAssemblyId>false</appendAssemblyId>
 	        <descriptorRefs>
 	            <descriptorRef>jar-with-dependencies</descriptorRef>
 	        </descriptorRefs>
 	        <archive>
 	            <manifest>
-	                <mainClass>expref.GitAnalyzer</mainClass>
+	                <mainClass>jp.naist.se.commentlister.GitAnalyzer</mainClass>
 	            </manifest>
 	        </archive>
 	    </configuration>
