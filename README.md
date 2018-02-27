@@ -69,8 +69,9 @@ The following JSON is an actual example extracted from the project's git reposit
 ## Performance
 
 Simple execution (not an organized evaluation) on a workstation with Xeon E5-2690 v3 2.60GHz results:
- - 56 seconds for Linux git repository (around 42000 files)
- - 218 seconds for Intellij-Community git repository (around 66000 files)
+ - 56 seconds for Linux git repository (42,000 files, 2.1 GB)
+ - 218 seconds for Intellij-Community git repository (66,000 files, 2.8GB)
+ - 1502 seconds for Gecko-dev git repository (90,000 files, 3.8 GB)
 
 ## Dependencies
 
