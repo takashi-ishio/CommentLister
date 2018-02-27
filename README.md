@@ -9,6 +9,8 @@ You can make a runnable jar `CommentLister.jar` by executing `mvn package`.
 ## Usage
 
 This tool automatically extracts comment in source code stored in a git repository.
+The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, and C#. 
+
 The tool takes a file path to a git repository to be analyzed, for example:
 
         java -jar CommentLister.jar myapp/.git
@@ -64,4 +66,14 @@ The following JSON is an actual example extracted from the project's git reposit
           "ElapsedTime" : 562
         }
 
+## Performance
 
+Simple execution (not an organized evaluation) on a workstation with Xeon E5-2690 v3 2.60GHz results:
+ - 56 seconds for Linux git repository (around 42000 files)
+ - 218 seconds for Intellij-Community git repository (around 66000 files)
+
+## Dependencies
+
+ - [JGit](https://www.eclipse.org/jgit/) to process a git repository,
+ - [ANTLR4](http://www.antlr.org/index.html) to extract comments from source code, and
+ - [Jackson Core](https://github.com/FasterXML/jackson-core) to generate a JSON file.
