@@ -9,7 +9,7 @@ You can make a runnable jar `CommentLister.jar` by executing `mvn package`.
 ## Usage
 
 This tool automatically extracts comment in source code stored in a git repository.
-The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, and C#. 
+The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, and C#. 
 
 The tool takes a file path to a git repository to be analyzed, for example:
 

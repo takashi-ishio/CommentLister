@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
+import org.antlr.v4.runtime.CaseChangingCharStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.Token;
@@ -13,12 +14,13 @@ import jp.naist.se.commentlister.lexer.CPP14Lexer;
 import jp.naist.se.commentlister.lexer.CSharpLexer;
 import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
+import jp.naist.se.commentlister.lexer.PhpLexer;
 import jp.naist.se.commentlister.lexer.Python3Lexer;
 
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP;
 
 	private static HashMap<String, FileType> filetype;
 	static {
@@ -46,6 +48,8 @@ public enum FileType {
 		filetype.put("cs", FileType.CSHARP);
 
 		filetype.put("py", FileType.PYTHON);
+
+		filetype.put("php", FileType.PHP);
 	}
 	
 	public static FileType getFileType(String filename) {
@@ -154,6 +158,16 @@ public enum FileType {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == Python3Lexer.HIDDEN;
+					}
+				});
+			}
+			case PHP:
+			{
+				PhpLexer lexer = new PhpLexer(new CaseChangingCharStream(createStream(buf), false));
+				return new CommentReader(lexer, new CommentReader.Filter() {
+					@Override
+					public boolean accept(Token t) {
+						return t.getChannel() == PhpLexer.PhpComments;
 					}
 				});
 			}
