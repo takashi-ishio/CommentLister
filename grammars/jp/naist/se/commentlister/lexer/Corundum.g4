@@ -403,8 +403,8 @@ RIGHT_SBRACKET : ']';
 
 NIL : 'nil';
 
-SL_COMMENT : ('#' ~('\r' | '\n')* '\r'? '\n') -> skip;
-ML_COMMENT : ('=begin' .*? '=end' '\r'? '\n') -> skip;
+SL_COMMENT : ('#' ~('\r' | '\n')* '\r'? '\n') -> channel(HIDDEN);
+ML_COMMENT : ('=begin' .*? '=end' '\r'? '\n') -> channel(HIDDEN);
 WS : (' '|'\t')+ -> skip;
 
 INT : [0-9]+;
