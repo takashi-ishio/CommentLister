@@ -360,6 +360,9 @@ RETRY : 'retry';
 BREAK : 'break';
 FOR : 'for';
 
+DO : 'do';
+SYMBOL: ':' ID;
+
 TRUE : 'true';
 FALSE : 'false';
 

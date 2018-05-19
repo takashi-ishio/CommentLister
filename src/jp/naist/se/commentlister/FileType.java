@@ -12,15 +12,17 @@ import org.antlr.v4.runtime.Token;
 
 import jp.naist.se.commentlister.lexer.CPP14Lexer;
 import jp.naist.se.commentlister.lexer.CSharpLexer;
+import jp.naist.se.commentlister.lexer.CorundumLexer;
 import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
 import jp.naist.se.commentlister.lexer.PhpLexer;
 import jp.naist.se.commentlister.lexer.Python3Lexer;
+import jp.naist.se.commentlister.ruby.CommentScanner;
 
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY;
 
 	private static HashMap<String, FileType> filetype;
 	static {
@@ -50,6 +52,8 @@ public enum FileType {
 		filetype.put("py", FileType.PYTHON);
 
 		filetype.put("php", FileType.PHP);
+		
+		filetype.put("rb", FileType.RUBY);
 	}
 	
 	public static FileType getFileType(String filename) {
@@ -170,6 +174,18 @@ public enum FileType {
 						return t.getChannel() == PhpLexer.PhpComments;
 					}
 				});
+			}
+			case RUBY:
+			{
+//				CorundumLexer lexer = new CorundumLexer(createStream(buf));
+//				return new CommentReader(lexer, new CommentReader.Filter() {
+//					@Override
+//					public boolean accept(Token t) {
+//						return t.getChannel() == CorundumLexer.HIDDEN;
+//					}
+//				});
+				CommentScanner scanner = new CommentScanner(buf);
+				return null;
 			}
 			default:
 				return null;
