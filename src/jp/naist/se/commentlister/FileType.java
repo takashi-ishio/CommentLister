@@ -12,7 +12,6 @@ import org.antlr.v4.runtime.Token;
 
 import jp.naist.se.commentlister.lexer.CPP14Lexer;
 import jp.naist.se.commentlister.lexer.CSharpLexer;
-import jp.naist.se.commentlister.lexer.CorundumLexer;
 import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
 import jp.naist.se.commentlister.lexer.PhpLexer;
