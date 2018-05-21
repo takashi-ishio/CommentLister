@@ -11,7 +11,6 @@ class CommentScanner < Ripper::Filter
 	end
 	
 	def on_comment(tok, f)
-#		puts "#{tok} #{lineno} #{column}"
 		if (@comments.length > 0) and (@comments[-1][2] == lineno-1) and (@comments[-1][3] == column)
 			@comments[-1][0] = @comments[-1][0] + tok
 			@comments[-1][2] = lineno
@@ -45,6 +44,7 @@ class CommentScanner < Ripper::Filter
 	def comments
 		@comments
 	end
+	
 end
 
 def parse(src)
