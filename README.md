@@ -66,7 +66,7 @@ The following JSON is an actual example extracted from the project's git reposit
           "ElapsedTime" : 562
         }
 
-## Language Detection
+## Supported Languages
 
 The tool chooses a lexer for a source file using its file extension (case-insensitive).
 
