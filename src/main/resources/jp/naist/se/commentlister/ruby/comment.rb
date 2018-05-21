@@ -11,12 +11,12 @@ class CommentScanner < Ripper::Filter
 	end
 	
 	def on_comment(tok, f)
-		if (@comments.length > 0) and (@comments[-1][2] == lineno-1) and (@comments[-1][3] == column)
-			@comments[-1][0] = @comments[-1][0] + tok
-			@comments[-1][2] = lineno
-		else
+		#if (@comments.length > 0) and (@comments[-1][2] == lineno-1) and (@comments[-1][3] == column)
+		#	@comments[-1][0] = @comments[-1][0] + tok
+		#	@comments[-1][2] = lineno
+		#else
 			@comments << [tok, lineno, lineno, column]
-		end
+		#end
 	end
 	
 	def on_embdoc_beg(tok, f)
