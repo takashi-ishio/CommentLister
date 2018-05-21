@@ -4,8 +4,8 @@
   <artifactId>CommentLister</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <build>
-    <sourceDirectory>src</sourceDirectory>
-    <testSourceDirectory>test</testSourceDirectory>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -21,7 +21,7 @@
         <artifactId>antlr4-maven-plugin</artifactId>
         <version>4.7</version>
 		<configuration>
-			<sourceDirectory>grammars</sourceDirectory>
+			<sourceDirectory>src/main/antlr4</sourceDirectory>
 			<arguments><argument>-package</argument><argument>jp.naist.se.commentlister.lexer</argument></arguments>
 			<visitor>true</visitor>
 			<listener>true</listener>
