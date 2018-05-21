@@ -7,15 +7,16 @@ import java.io.StringWriter;
 import org.jruby.embed.EmbedEvalUnit;
 import org.jruby.embed.ScriptingContainer;
 
-public class CommentScanner  {
-	
+import jp.naist.se.commentlister.CommentReader;
 
-	public CommentScanner(byte[] source) {
+public class RubyCommentReader implements CommentReader {
+	
+	public RubyCommentReader(byte[] source) {
 		ScriptingContainer container = new ScriptingContainer();
 		StringWriter w = new StringWriter();
         //container.setOutput(w);
 		
-    	try (InputStreamReader f = new InputStreamReader(CommentScanner.class.getResourceAsStream("comment.rb"))) {
+    	try (InputStreamReader f = new InputStreamReader(RubyCommentReader.class.getResourceAsStream("comment.rb"))) {
     		container.put("value", new String(source));
     		EmbedEvalUnit unit = container.parse(f, "comment.rb");
     		unit.run();
@@ -26,5 +27,24 @@ public class CommentScanner  {
         container.terminate();
     }
 	
+	@Override
+	public boolean next() {
+		return false;
+	}
+	
+	@Override
+	public String getText() {
+		return null;
+	}
+	
+	@Override
+	public int getLine() {
+		return 0;
+	}
+	
+	@Override
+	public int getCharPositionInLine() {
+		return 0;
+	}
 	
 }

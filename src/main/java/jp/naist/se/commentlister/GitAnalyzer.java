@@ -7,7 +7,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.antlr.v4.runtime.Token;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -208,19 +207,19 @@ public class GitAnalyzer implements AutoCloseable {
 		ObjectLoader reader = repo.newObjectReader().open(obj); 
 		byte[] content = reader.getCachedBytes();
 		FileType t = FileType.getFileType(path);
-		CommentReader lexer = FileType.createCommentReader(t, content);
-		if (lexer == null) return;
+		CommentReader comments = FileType.createCommentReader(t, content);
+		if (comments == null) return;
 		counters.computeIfAbsent(t, type -> new Counter()).increment();
 		gen.writeObjectFieldStart(path);
 		gen.writeStringField("ObjectId", obj.name());
 		gen.writeStringField("LastModified", epochToISO(lastModified));
 		gen.writeStringField("FileType", t.name());
 		int commentCount = 0;
-		for (Token token = lexer.nextToken(); token.getType() != Token.EOF; token = lexer.nextToken()) {
+		while (comments.next()) {
 			gen.writeObjectFieldStart(Integer.toString(commentCount++));
-			gen.writeObjectField("Text", token.getText());
-			gen.writeObjectField("Line", token.getLine());
-			gen.writeObjectField("CharPositionInLine", token.getCharPositionInLine());
+			gen.writeObjectField("Text", comments.getText());
+			gen.writeObjectField("Line", comments.getLine());
+			gen.writeObjectField("CharPositionInLine", comments.getCharPositionInLine());
 			gen.writeEndObject();
 		}
 		gen.writeNumberField("CommentCount", commentCount);

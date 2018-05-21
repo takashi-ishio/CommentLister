@@ -16,7 +16,7 @@ import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
 import jp.naist.se.commentlister.lexer.PhpLexer;
 import jp.naist.se.commentlister.lexer.Python3Lexer;
-import jp.naist.se.commentlister.ruby.CommentScanner;
+import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 
 public enum FileType {
@@ -113,7 +113,7 @@ public enum FileType {
 			case JAVA:
 			{
 				Java8Lexer lexer = new Java8Lexer(createStream(buf));
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == Java8Lexer.HIDDEN;
@@ -125,7 +125,7 @@ public enum FileType {
 				CPP14Lexer lexer = new CPP14Lexer(createStream(buf));
 				//CommonTokenStream c = new CommonTokenStream(lexer, Java8Lexer.HIDDEN);
 				//System.out.println(c.size());
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == Java8Lexer.HIDDEN;
@@ -135,7 +135,7 @@ public enum FileType {
 			case ECMASCRIPT:
 			{
 				ECMAScriptLexer lexer = new ECMAScriptLexer(createStream(buf));
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == ECMAScriptLexer.HIDDEN &&
@@ -147,7 +147,7 @@ public enum FileType {
 			case CSHARP:
 			{
 				CSharpLexer lexer = new CSharpLexer(createStream(buf));
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == CSharpLexer.COMMENTS_CHANNEL;
@@ -157,7 +157,7 @@ public enum FileType {
 			case PYTHON:
 			{
 				Python3Lexer lexer = new Python3Lexer(createStream(buf));
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == Python3Lexer.HIDDEN;
@@ -167,7 +167,7 @@ public enum FileType {
 			case PHP:
 			{
 				PhpLexer lexer = new PhpLexer(new CaseChangingCharStream(createStream(buf), false));
-				return new CommentReader(lexer, new CommentReader.Filter() {
+				return new AntlrCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
 						return t.getChannel() == PhpLexer.PhpComments;
@@ -176,15 +176,8 @@ public enum FileType {
 			}
 			case RUBY:
 			{
-//				CorundumLexer lexer = new CorundumLexer(createStream(buf));
-//				return new CommentReader(lexer, new CommentReader.Filter() {
-//					@Override
-//					public boolean accept(Token t) {
-//						return t.getChannel() == CorundumLexer.HIDDEN;
-//					}
-//				});
-				CommentScanner scanner = new CommentScanner(buf);
-				return null;
+				RubyCommentReader reader = new RubyCommentReader(buf);
+				return reader;
 			}
 			default:
 				return null;
