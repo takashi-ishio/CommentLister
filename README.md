@@ -66,6 +66,23 @@ The following JSON is an actual example extracted from the project's git reposit
           "ElapsedTime" : 562
         }
 
+## Language Detection
+
+The tool chooses a lexer for a source file using its file extension (case-insensitive).
+
+|Language|File Extensions|
+|:-------|:--------------|
+|C/C++ 14|.c, .cc, .cp, .cpp, .cx, .cxx, .c+, .c++, .h, .hh, .hxx, .h+, .h++, .hp, .hpp|
+|Java 8|.java|
+|ECMAScript|.js|
+|C#|.cs|
+|Python 3|.py|
+|PHP|.php|
+|Ruby 2.3|.rb|
+
+For developers: The rules are included in `jp.naist.se.commentlister.FileType` class.
+
+
 ## Performance
 
 Simple execution (not an organized evaluation) on a workstation with Xeon E5-2690 v3 2.60GHz results:
@@ -73,8 +90,19 @@ Simple execution (not an organized evaluation) on a workstation with Xeon E5-269
  - 218 seconds for Intellij-Community git repository (66,000 files, 2.8GB)
  - 1502 seconds for Gecko-dev git repository (90,000 files, 3.8 GB)
 
+
+## Directory Structure
+
+  - `src/main` is the main source directory.
+    - `src/main/java` includes main java files.
+    - `src/main/antlr4` includes grammar files to generate lexers.  
+      - The files come from https://github.com/antlr/grammars-v4/. 
+      - Some of them are modified to push comments into HIDDEN channel, since the original ones simply discard the comments.  
+    - `src/main/resources` includes a ruby file to parse Ruby source files.     
+
 ## Dependencies
 
- - [JGit](https://www.eclipse.org/jgit/) to process a git repository,
- - [ANTLR4](http://www.antlr.org/index.html) to extract comments from source code, and
- - [Jackson Core](https://github.com/FasterXML/jackson-core) to generate a JSON file.
+ - [JGit](https://www.eclipse.org/jgit/) to process a git repository
+ - [ANTLR4](http://www.antlr.org/index.html) to extract comments from source code
+ - [Jackson Core](https://github.com/FasterXML/jackson-core) to generate a JSON file
+ - [JRuby](http://jruby.org/) to parse Ruby source files
