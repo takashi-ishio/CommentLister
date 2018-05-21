@@ -6,45 +6,61 @@ import java.io.StringWriter;
 
 import org.jruby.embed.EmbedEvalUnit;
 import org.jruby.embed.ScriptingContainer;
+import org.jruby.runtime.builtin.IRubyObject;
 
 import jp.naist.se.commentlister.CommentReader;
 
 public class RubyCommentReader implements CommentReader {
+
+	public static class Comment {
+		private String text;
+		private int line;
+		private int charPositionInLine;
+		
+		public Comment(String t, int l, int charpos) {
+			this.text = t;
+			this.line = l;
+			this.charPositionInLine = charpos;
+		}
+	}
+
+	private Comment[] comments;
+	private int index = 0;
+	
 	
 	public RubyCommentReader(byte[] source) {
 		ScriptingContainer container = new ScriptingContainer();
-		StringWriter w = new StringWriter();
-        //container.setOutput(w);
 		
     	try (InputStreamReader f = new InputStreamReader(RubyCommentReader.class.getResourceAsStream("comment.rb"))) {
     		container.put("value", new String(source));
     		EmbedEvalUnit unit = container.parse(f, "comment.rb");
-    		unit.run();
-    	} catch(IOException e) { 
+    		IRubyObject ret = unit.run();
+    		comments = (Comment[])ret.toJava(Comment[].class);
+    	} catch(Throwable e) { 
     		e.printStackTrace();
+    		comments = new Comment[0];
     	}
-        System.out.println(w.toString());
-        container.terminate();
     }
 	
 	@Override
 	public boolean next() {
-		return false;
+		index++;
+		return index < comments.length;
 	}
 	
 	@Override
 	public String getText() {
-		return null;
+		return comments[index].text;
 	}
 	
 	@Override
 	public int getLine() {
-		return 0;
+		return comments[index].line;
 	}
 	
 	@Override
 	public int getCharPositionInLine() {
-		return 0;
+		return comments[index].charPositionInLine;
 	}
 	
 }
