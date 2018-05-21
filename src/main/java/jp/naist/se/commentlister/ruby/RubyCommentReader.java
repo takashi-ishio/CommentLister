@@ -1,8 +1,6 @@
 package jp.naist.se.commentlister.ruby;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
 
 import org.jruby.embed.EmbedEvalUnit;
 import org.jruby.embed.ScriptingContainer;
@@ -27,7 +25,6 @@ public class RubyCommentReader implements CommentReader {
 	private Comment[] comments;
 	private int index = 0;
 	
-	
 	public RubyCommentReader(byte[] source) {
 		ScriptingContainer container = new ScriptingContainer();
 		
@@ -35,7 +32,11 @@ public class RubyCommentReader implements CommentReader {
     		container.put("value", new String(source));
     		EmbedEvalUnit unit = container.parse(f, "comment.rb");
     		IRubyObject ret = unit.run();
-    		comments = (Comment[])ret.toJava(Comment[].class);
+    		if (ret != null && !ret.isNil()) {
+        		comments = (Comment[])ret.toJava(Comment[].class);
+    		} else {
+        		comments = new Comment[0];
+    		}
     	} catch(Throwable e) { 
     		e.printStackTrace();
     		comments = new Comment[0];
