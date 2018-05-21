@@ -23,7 +23,7 @@ public class RubyCommentReader implements CommentReader {
 	}
 
 	private Comment[] comments;
-	private int index = 0;
+	private int index = -1;
 	
 	public RubyCommentReader(byte[] source) {
 		ScriptingContainer container = new ScriptingContainer();
