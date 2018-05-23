@@ -43,6 +43,12 @@ public class CommentReaderTest {
 	}
 	
 	@Test
+	public void testPython() {
+		Assert.assertEquals(2, countComments(FileType.PYTHON, "# 1st line\n# 2nd line\n # 2nd commnent"));
+		Assert.assertEquals(2, countComments(FileType.PYTHON, "\"\"\"docString\n2nd line\n3rd line\n\"\"\"\n\"\"\"Another doc string\n\"\"\""));
+	}
+	
+	@Test
 	public void testRuby() throws Exception {
 		Assert.assertEquals(1, countComments(FileType.RUBY, "# 1st line\n# 2nd line"));
 		Assert.assertEquals(1, countComments(FileType.RUBY, "=begin 1st line \n=end"));

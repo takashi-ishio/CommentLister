@@ -70,15 +70,15 @@ The following JSON is an actual example extracted from the project's git reposit
 
 The tool chooses a lexer for a source file using its file extension (case-insensitive).
 
-|Language|File Extensions|
-|:-------|:--------------|
-|C/C++ 14|.c, .cc, .cp, .cpp, .cx, .cxx, .c+, .c++, .h, .hh, .hxx, .h+, .h++, .hp, .hpp|
-|Java 8|.java|
-|ECMAScript|.js|
-|C#|.cs|
-|Python 3|.py|
-|PHP|.php|
-|Ruby 2.3|.rb|
+|Language|File Extensions|Comment Features|
+|:-------|:--------------|:---------------|
+|C/C++ 14|.c, .cc, .cp, .cpp, .cx, .cxx, .c+, .c++, .h, .hh, .hxx, .h+, .h++, .hp, .hpp|`//`, `/* ... */`|
+|Java 8|.java|`//`, `/* ... */`|
+|ECMAScript|.js|`//`, `/* ... */`|
+|C#|.cs|`//`, `/* ... */`|
+|Python 3|.py|`#` and long string literals (""" ... """). The literals include docstrings and regular string literals.|
+|PHP|.php|`//`, `/* ... */`, `#`, and HTML comments. It may not preserve white space, because PHP allows `<?php // comment ?>` in a single line.|
+|Ruby 2.3|.rb|`#`, `=begin ... =end`|
 
 For developers: The rules are included in `jp.naist.se.commentlister.FileType` class.
 

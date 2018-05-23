@@ -160,7 +160,8 @@ public enum FileType {
 				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
 					@Override
 					public boolean accept(Token t) {
-						return t.getChannel() == Python3Lexer.HIDDEN;
+						return (t.getChannel() == Python3Lexer.HIDDEN) ||
+							(t.getType() == Python3Lexer.STRING && t.getText().contains("\"\"\""));
 					}
 				});
 			}
