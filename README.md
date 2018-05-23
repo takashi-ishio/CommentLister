@@ -82,6 +82,27 @@ The tool chooses a lexer for a source file using its file extension (case-insens
 
 For developers: The rules are included in `jp.naist.se.commentlister.FileType` class.
 
+Note that single-line comments in consecutive lines are regarded as a single multi-line comment, if the comments have the same char position in the lines. The following snippets are examples.
+
+```Ruby
+# 1st line
+# 2nd line
+```
+
+```c++
+/* 1st line */
+/* 2nd line */
+```
+
+```c++
+int x = 0;   // 1st line
+             // 2nd line
+```
+
+
+
+## 
+
 
 ## Performance
 
