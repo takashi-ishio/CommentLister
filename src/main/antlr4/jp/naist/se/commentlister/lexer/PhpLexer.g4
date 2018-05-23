@@ -135,7 +135,7 @@ PHPStartEcho:   PhpStartEchoFragment -> type(Echo), pushMode(PHP);
 PHPStart:       PhpStartFragment -> channel(SkipChannel), pushMode(PHP);
 HtmlScriptOpen: '<' 'script' { _scriptTag = true; } -> pushMode(INSIDE);
 HtmlStyleOpen:  '<' 'style' { _styleTag = true; } -> pushMode(INSIDE);
-HtmlComment:    '<' '!' '--' .*? '-->' -> channel(HIDDEN);
+HtmlComment:    '<' '!' '--' .*? '-->' -> channel(PhpComments);
 HtmlDtd:        '<' '!' .*? '>';
 HtmlOpen:       '<' -> pushMode(INSIDE);
 Shebang
@@ -223,8 +223,8 @@ PHPEnd:             (('?' | {AspTags}? '%') '>') | {_phpScript}? '</script>'
       |             {_phpScript}? '</script>';
 Whitespace:         [ \t\r\n]+ -> channel(SkipChannel);
 MultiLineComment:   '/*' .*? '*/' -> channel(PhpComments);
-SingleLineComment:  '//' -> channel(SkipChannel), pushMode(SingleLineCommentMode);
-ShellStyleComment:  '#' -> channel(SkipChannel), pushMode(SingleLineCommentMode);
+SingleLineComment:  '//' -> channel(PhpComments), pushMode(SingleLineCommentMode);
+ShellStyleComment:  '#' -> channel(PhpComments), pushMode(SingleLineCommentMode);
 
 Abstract:           'abstract';
 Array:              'array';

@@ -25,12 +25,20 @@ public class AntlrMultilineCommentReader implements CommentReader {
 		}
 		
 		public boolean isContinue(String t, int l, int charpos) {
-			return this.endLine + 1 == l && this.charPositionInLine == charpos;
+			return (this.endLine == l) || (this.endLine + 1 == l && this.charPositionInLine == charpos);
 		}
 		
 		public void append(String t, int l) {
-			this.text = this.text + "\n" + t;
-			this.endLine = l;
+			if (this.endLine == l) {
+				this.text = this.text + " " + t;
+			} else {
+				this.text = this.text + "\n" + t;
+				this.endLine = l;
+			}
+		}
+		
+		public String toString() {
+			return text + " (line=" + line + ", endLine=" + endLine + ", charPos=" + charPositionInLine+ ")"; 
 		}
 	}
 

@@ -38,6 +38,11 @@ public class CommentReaderTest {
 	}
 	
 	@Test
+	public void testPHP() {
+		Assert.assertEquals(4, countComments(FileType.PHP, "<?php\necho '';\n//1st\n//2nd line\n  /* 2nd comment */\n   # 3rd comment\n?><HTML><!-- 4th Comment --></HTML>"));
+	}
+	
+	@Test
 	public void testRuby() throws Exception {
 		Assert.assertEquals(1, countComments(FileType.RUBY, "# 1st line\n# 2nd line"));
 		Assert.assertEquals(1, countComments(FileType.RUBY, "=begin 1st line \n=end"));
