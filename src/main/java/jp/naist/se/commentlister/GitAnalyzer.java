@@ -1,8 +1,11 @@
 package jp.naist.se.commentlister;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -206,6 +209,10 @@ public class GitAnalyzer implements AutoCloseable {
 	}
 	
 	public void processFile(Repository repo, String path, FileType t, ObjectId obj, int lastModified) throws IOException {
+		PrintStream err = System.err;
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+		PrintStream s = new PrintStream(buffer);
+		System.setErr(s);
 		try {
 			gen.writeObjectFieldStart(path);
 			gen.writeStringField("ObjectId", obj.name());
@@ -215,6 +222,7 @@ public class GitAnalyzer implements AutoCloseable {
 			// This may throw MissingObjectException
 			ObjectLoader reader = repo.newObjectReader().open(obj); 
 			byte[] content = reader.getCachedBytes();
+			
 			CommentReader comments = FileType.createCommentReader(t, content);
 			if (comments != null) {
 				counters.computeIfAbsent(t, type -> new Counter()).increment();
@@ -235,7 +243,9 @@ public class GitAnalyzer implements AutoCloseable {
 			gen.writeStringField("Error", "MissingObject");
 			gen.writeNumberField("CommentCount", 0);
 		} finally {
+			gen.writeStringField("Errorlog", buffer.toString());
 			gen.writeEndObject();
+			System.setErr(err);
 		}
 	}
 	
