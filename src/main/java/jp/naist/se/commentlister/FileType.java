@@ -2,6 +2,7 @@ package jp.naist.se.commentlister;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
@@ -107,82 +108,106 @@ public enum FileType {
 		}
 	}
 	
+	private static CommentReader createReader(FileType filetype, CharStream stream) {
+		switch (filetype) {
+		case JAVA:
+		{
+			Java8Lexer lexer = new Java8Lexer(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getChannel() == Java8Lexer.HIDDEN;
+				}
+			});
+		}
+		case CPP:
+		{
+			CPP14Lexer lexer = new CPP14Lexer(stream);
+			//CommonTokenStream c = new CommonTokenStream(lexer, Java8Lexer.HIDDEN);
+			//System.out.println(c.size());
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getChannel() == Java8Lexer.HIDDEN;
+				}
+			});
+		}
+		case ECMASCRIPT:
+		{
+			ECMAScriptLexer lexer = new ECMAScriptLexer(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getChannel() == ECMAScriptLexer.HIDDEN &&
+							(t.getType() == ECMAScriptLexer.MultiLineComment ||
+							t.getType() == ECMAScriptLexer.SingleLineComment);
+				}
+			});
+		}
+		case CSHARP:
+		{
+			CSharpLexer lexer = new CSharpLexer(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getChannel() == CSharpLexer.COMMENTS_CHANNEL;
+				}
+			});
+		}
+		case PYTHON:
+		{
+			Python3Lexer lexer = new Python3Lexer(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return (t.getChannel() == Python3Lexer.HIDDEN) ||
+						(t.getType() == Python3Lexer.STRING && t.getText().contains("\"\"\""));
+				}
+			});
+		}
+		case PHP:
+		{
+			PhpLexer lexer = new PhpLexer(new CaseChangingCharStream(stream, false));
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getChannel() == PhpLexer.PhpComments;
+				}
+			});
+		}
+		case RUBY:
+		{
+			// unsupported 
+			return null;
+		}
+		default:
+			return null;
+		
+		}
+	}
+
+	/**
+	 * This method is prepared to handle "LargeObject" in a git repository.
+	 * This method currently does not support Ruby files.
+	 * @param filetype
+	 * @param stream
+	 * @return
+	 */
+	public static CommentReader createCommentReader(FileType filetype, InputStream stream) {
+		try {
+			return createReader(filetype, CharStreams.fromStream(stream));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	public static CommentReader createCommentReader(FileType filetype, byte[] buf) {
 		try {
-			switch (filetype) {
-			case JAVA:
-			{
-				Java8Lexer lexer = new Java8Lexer(createStream(buf));
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return t.getChannel() == Java8Lexer.HIDDEN;
-					}
-				});
-			}
-			case CPP:
-			{
-				CPP14Lexer lexer = new CPP14Lexer(createStream(buf));
-				//CommonTokenStream c = new CommonTokenStream(lexer, Java8Lexer.HIDDEN);
-				//System.out.println(c.size());
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return t.getChannel() == Java8Lexer.HIDDEN;
-					}
-				});
-			}
-			case ECMASCRIPT:
-			{
-				ECMAScriptLexer lexer = new ECMAScriptLexer(createStream(buf));
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return t.getChannel() == ECMAScriptLexer.HIDDEN &&
-								(t.getType() == ECMAScriptLexer.MultiLineComment ||
-								t.getType() == ECMAScriptLexer.SingleLineComment);
-					}
-				});
-			}
-			case CSHARP:
-			{
-				CSharpLexer lexer = new CSharpLexer(createStream(buf));
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return t.getChannel() == CSharpLexer.COMMENTS_CHANNEL;
-					}
-				});
-			}
-			case PYTHON:
-			{
-				Python3Lexer lexer = new Python3Lexer(createStream(buf));
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return (t.getChannel() == Python3Lexer.HIDDEN) ||
-							(t.getType() == Python3Lexer.STRING && t.getText().contains("\"\"\""));
-					}
-				});
-			}
-			case PHP:
-			{
-				PhpLexer lexer = new PhpLexer(new CaseChangingCharStream(createStream(buf), false));
-				return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
-					@Override
-					public boolean accept(Token t) {
-						return t.getChannel() == PhpLexer.PhpComments;
-					}
-				});
-			}
-			case RUBY:
-			{
-				RubyCommentReader reader = new RubyCommentReader(buf);
-				return reader;
-			}
-			default:
-				return null;
-			
+			if (filetype == FileType.RUBY) {
+				return new RubyCommentReader(buf);
+			} else {
+				return createReader(filetype, createStream(buf));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

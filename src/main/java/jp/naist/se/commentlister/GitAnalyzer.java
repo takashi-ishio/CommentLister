@@ -17,6 +17,7 @@ import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectStream;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -237,9 +238,14 @@ public class GitAnalyzer implements AutoCloseable {
 
 			// This may throw MissingObjectException
 			ObjectLoader reader = repo.newObjectReader().open(obj); 
-			byte[] content = reader.getCachedBytes();
+			CommentReader comments = null;
+			if (reader.isLarge()) {
+				comments = FileType.createCommentReader(t, reader.openStream());
+			} else {
+				byte[] content = reader.getCachedBytes();
+				comments = FileType.createCommentReader(t, content);
+			}
 			
-			CommentReader comments = FileType.createCommentReader(t, content);
 			if (comments != null) {
 				counters.computeIfAbsent(t, type -> new Counter()).increment();
 				int commentCount = 0;
