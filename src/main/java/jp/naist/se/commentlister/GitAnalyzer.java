@@ -243,7 +243,10 @@ public class GitAnalyzer implements AutoCloseable {
 			gen.writeStringField("Error", "MissingObject");
 			gen.writeNumberField("CommentCount", 0);
 		} finally {
-			gen.writeStringField("Errorlog", buffer.toString());
+			s.close();
+			if (buffer.size() > 0) {
+				gen.writeStringField("Errorlog", buffer.toString());
+			}
 			gen.writeEndObject();
 			System.setErr(err);
 		}
