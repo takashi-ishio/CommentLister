@@ -5,10 +5,10 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -157,8 +157,10 @@ public class GitAnalyzer implements AutoCloseable {
 						}
 					}
 					gen.writeObjectFieldStart("FileTypes");
-					for (Map.Entry<FileType, Counter> entry: counters.entrySet()) {
-						gen.writeNumberField(entry.getKey().name(), entry.getValue().getCount());
+					
+					ArrayList<FileType> keys = getSortedFileTypes();
+					for (FileType key: keys) {
+						gen.writeNumberField(key.name(), counters.get(key).getCount());
 					}
 					gen.writeEndObject();
 					gen.writeNumberField("ElapsedTime", System.currentTimeMillis() - startTime);
@@ -176,6 +178,20 @@ public class GitAnalyzer implements AutoCloseable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * @return a sorted list of file types of counters
+	 */
+	private ArrayList<FileType> getSortedFileTypes() {
+		ArrayList<FileType> keys = new ArrayList<>(counters.keySet());
+		keys.sort(new Comparator<FileType>() {
+			@Override
+			public int compare(FileType o1, FileType o2) {
+				return o1.ordinal() - o2.ordinal();
+			}
+		});
+		return keys;
 	}
 
 	/**
@@ -240,7 +256,7 @@ public class GitAnalyzer implements AutoCloseable {
 				gen.writeNumberField("CommentCount", 0);
 			}
 		} catch (MissingObjectException e) {
-			gen.writeStringField("Error", "MissingObject");
+			gen.writeStringField("Error", "MissingObjectException");
 			gen.writeNumberField("CommentCount", 0);
 		} finally {
 			s.close();
