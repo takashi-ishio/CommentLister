@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
@@ -140,9 +141,10 @@ public class GitAnalyzer implements AutoCloseable {
 							walk.setRecursive(true);
 							while (walk.next()) {
 								String path = new String(walk.getRawPath());
-								if (FileType.isSupported(path)) {
+								FileType t = FileType.getFileType(path);
+								if (FileType.isSupported(t)) {
 									int lastModified =  lastModified(revForLastModified, repo, objId, path);
-									processFile(repo, path, walk.getObjectId(0), lastModified);
+									processFile(repo, path, t, walk.getObjectId(0), lastModified);
 								}
 							}
 						} catch (IOException e) {
@@ -203,27 +205,38 @@ public class GitAnalyzer implements AutoCloseable {
 		return Instant.ofEpochSecond(epoch).toString();		
 	}
 	
-	public void processFile(Repository repo, String path, ObjectId obj, int lastModified) throws IOException {
-		ObjectLoader reader = repo.newObjectReader().open(obj); 
-		byte[] content = reader.getCachedBytes();
-		FileType t = FileType.getFileType(path);
-		CommentReader comments = FileType.createCommentReader(t, content);
-		if (comments == null) return;
-		counters.computeIfAbsent(t, type -> new Counter()).increment();
-		gen.writeObjectFieldStart(path);
-		gen.writeStringField("ObjectId", obj.name());
-		gen.writeStringField("LastModified", epochToISO(lastModified));
-		gen.writeStringField("FileType", t.name());
-		int commentCount = 0;
-		while (comments.next()) {
-			gen.writeObjectFieldStart(Integer.toString(commentCount++));
-			gen.writeObjectField("Text", comments.getText());
-			gen.writeObjectField("Line", comments.getLine());
-			gen.writeObjectField("CharPositionInLine", comments.getCharPositionInLine());
+	public void processFile(Repository repo, String path, FileType t, ObjectId obj, int lastModified) throws IOException {
+		try {
+			gen.writeObjectFieldStart(path);
+			gen.writeStringField("ObjectId", obj.name());
+			gen.writeStringField("LastModified", epochToISO(lastModified));
+			gen.writeStringField("FileType", t.name());
+
+			// This may throw MissingObjectException
+			ObjectLoader reader = repo.newObjectReader().open(obj); 
+			byte[] content = reader.getCachedBytes();
+			CommentReader comments = FileType.createCommentReader(t, content);
+			if (comments != null) {
+				counters.computeIfAbsent(t, type -> new Counter()).increment();
+				int commentCount = 0;
+				while (comments.next()) {
+					gen.writeObjectFieldStart(Integer.toString(commentCount++));
+					gen.writeObjectField("Text", comments.getText());
+					gen.writeObjectField("Line", comments.getLine());
+					gen.writeObjectField("CharPositionInLine", comments.getCharPositionInLine());
+					gen.writeEndObject();
+				}
+				gen.writeNumberField("CommentCount", commentCount);
+			} else {
+				gen.writeStringField("Error", "CommentReadFail");
+				gen.writeNumberField("CommentCount", 0);
+			}
+		} catch (MissingObjectException e) {
+			gen.writeStringField("Error", "MissingObject");
+			gen.writeNumberField("CommentCount", 0);
+		} finally {
 			gen.writeEndObject();
 		}
-		gen.writeNumberField("CommentCount", commentCount);
-		gen.writeEndObject();
 	}
 	
 	
