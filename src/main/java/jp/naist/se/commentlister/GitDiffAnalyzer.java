@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.jgit.api.Git;
@@ -252,7 +251,16 @@ public class GitDiffAnalyzer implements AutoCloseable {
 			return url;
 		}
 	}
-
+	
+	private int getRelativeLinePos(String text, int index) {
+		int line = 0;
+		int endLineIndex = text.indexOf('\n');
+		while (endLineIndex >= 0 && endLineIndex < index) {
+			line++;
+			endLineIndex = text.indexOf('\n', endLineIndex+1);
+		}
+		return line;	}
+	
 	private List<URLInComment> readURLsInComment(Repository repo, FileType t, AbbreviatedObjectId id) {
 		ArrayList<URLInComment> urls = new ArrayList<>();
 		try {
@@ -263,47 +271,43 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				comments = FileType.createCommentReader(t, reader.openStream());
 			} else {
 				byte[] content = reader.getCachedBytes();
+				if (!(new String(content).contains("http"))) return urls;
 				comments = FileType.createCommentReader(t, content);
 			}
 				
 			if (comments != null) {
 				while (comments.next()) {
 					String text = comments.getText();
-					int lineCount = 0;
-					int start = 0;
-					int newLineIndex = text.indexOf('\n');
-					if (newLineIndex < 0) newLineIndex = text.length();
+					int httpindex = text.indexOf("http");
+					int endLineIndex = text.indexOf('\n', httpindex);
+					if (endLineIndex < 0) endLineIndex = text.length();
 					
-					while (start < newLineIndex) {
-						String line = text.substring(start, newLineIndex);
+					while (httpindex >= 0) {
+						String line = text.substring(httpindex, endLineIndex);
 						if (line.endsWith("\r")) line = line.substring(0, line.length()-1);
-						int index = line.indexOf("http");
-						if (index >= 0) {
-							line = line.substring(index);
-							line = line.trim();
-							if (line.endsWith(".")) line = line.substring(0, line.length()-1);
-							if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
-							if (line.endsWith("]")) line = line.substring(0, line.length()-1);
-							index = line.lastIndexOf(',');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf(')');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf('(');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf('"');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf('>');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf('\'');
-							if (index > 0) line = line.substring(0, index);
-							index = line.lastIndexOf('}');
-							if (index > 0) line = line.substring(0, index);
-							urls.add(new URLInComment(line, comments.getLine() + lineCount));
-						}
-						start = newLineIndex + 1;
-						newLineIndex = text.indexOf('\n', start);
-						if (newLineIndex < 0) newLineIndex = text.length();
-						lineCount++;
+						line = line.trim();
+						if (line.endsWith(".")) line = line.substring(0, line.length()-1);
+						if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
+						if (line.endsWith("]")) line = line.substring(0, line.length()-1);
+						int index = line.lastIndexOf(',');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf(')');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf('(');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf('"');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf('>');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf('\'');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf('}');
+						if (index > 0) line = line.substring(0, index);
+						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex)));
+						
+						httpindex = text.indexOf("http", endLineIndex+1);
+						endLineIndex = text.indexOf('\n', endLineIndex+1);
+						if (endLineIndex < 0) endLineIndex = text.length();
 					}
 				}
 			}
