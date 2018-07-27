@@ -327,102 +327,109 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		List<URLInComment> oldURLs = readURLsInComment(repo, t, oldVersion);
 		List<URLInComment> newURLs = readURLsInComment(repo, t, newVersion);
 		if (oldURLs.size() == 0 && newURLs.size() == 0) return;
-
+		
 		int commentCount = 0;
 		gen.writeObjectFieldStart(pathName);
 		gen.writeStringField("FileEditType", "MODIFIED");
-		if (oldURLs.size() == 0) {
-			for (URLInComment url: newURLs) {
-				gen.writeObjectFieldStart(Integer.toString(commentCount++));
-				gen.writeStringField("Type", "ADDED");
-				gen.writeObjectField("NewURL", url.getURL());
-				gen.writeObjectField("NewLine", url.getLine());
-				gen.writeEndObject();
-			}
-		} else if (newURLs.size() == 0) {
-			for (URLInComment url: oldURLs) {
-				gen.writeObjectFieldStart(Integer.toString(commentCount++));
-				gen.writeStringField("Type", "DELETED");
-				gen.writeObjectField("OldURL", url.getURL());
-				gen.writeObjectField("OldLine", url.getLine());
-				gen.writeEndObject();
-			}
-		} else {
-			for (URLInComment old: oldURLs) {
-				Edit e = findRemoveOrReplace(editlist, old.getLine());
-				if (e != null) {
-					if (e.getType() == Type.DELETE) {
+		int oldIndex = 0;
+		int newIndex = 0;
+		for (Edit e: editlist) {
+			if (newIndex >= newURLs.size() && oldIndex >= oldURLs.size()) break;
+
+			if (e.getType() == Type.INSERT) {
+				while (newIndex < newURLs.size()) {
+					URLInComment url = newURLs.get(newIndex); 
+					if (e.getBeginB()+1 <= url.getLine() && url.getLine() < e.getEndB()+1) {
+						// Record the URL as ADDED
+						gen.writeObjectFieldStart(Integer.toString(commentCount++));
+						gen.writeStringField("Type", "ADDED");
+						gen.writeObjectField("NewURL", url.getURL());
+						gen.writeObjectField("NewLine", url.getLine());
+						gen.writeEndObject();
+					} else if (url.getLine() >= e.getEndB()+1) {
+						// The URL should be checked for the next difference
+						break;
+					}
+					newIndex++;
+				}
+			} else if (e.getType() == Type.DELETE) {
+				while (oldIndex < oldURLs.size()) {
+					URLInComment url = oldURLs.get(oldIndex); 
+					if (e.getBeginA()+1 <= url.getLine() && url.getLine() < e.getEndA()+1) {
+						// Record the URL as DELETED
 						gen.writeObjectFieldStart(Integer.toString(commentCount++));
 						gen.writeStringField("Type", "DELETED");
-						gen.writeObjectField("OldURL", old.getURL());
-						gen.writeObjectField("OldLine", old.getLine());
+						gen.writeObjectField("OldURL", url.getURL());
+						gen.writeObjectField("OldLine", url.getLine());
 						gen.writeEndObject();
-					} else if (e.getType() == Type.REPLACE) {
-						List<URLInComment> insertedURLs = findURLs(newURLs, e.getBeginB(), e.getEndB());
-						boolean found = false;
-						for (URLInComment u: insertedURLs) {
-							if (u.getURL().equals(old.getURL())) {
-								found = true;
-								// "UNCHANGED" was used for debugging
-								//gen.writeObjectFieldStart(Integer.toString(commentCount++));
-								//gen.writeStringField("Type", "UNCHANGED");
-								//gen.writeObjectField("OldURL", old.getURL());
-								//gen.writeObjectField("OldLine", old.getLine());
-								//gen.writeObjectField("NewLine", u.getLine());
-								//gen.writeEndObject();
+					} else if (url.getLine() >= e.getEndA()+1) {
+						// The URL should be checked for the next difference
+						break;
+					}
+					oldIndex++;
+				}
+			} else if (e.getType() == Type.REPLACE) {
+				// Obtain all DELETED URLs
+				ArrayList<URLInComment> deleted = new ArrayList<>();
+				while (oldIndex < oldURLs.size()) {
+					URLInComment url = oldURLs.get(oldIndex); 
+					if (e.getBeginA()+1 <= url.getLine() && url.getLine() < e.getEndA()+1) {
+						deleted.add(url);
+					} else if (url.getLine() >= e.getEndA()+1) {
+						break;
+					}
+					oldIndex++;
+				}
+				// Obtain all INSERTED URLs
+				ArrayList<URLInComment> added = new ArrayList<>();
+				while (newIndex < newURLs.size()) {
+					URLInComment url = newURLs.get(newIndex); 
+					if (e.getBeginB()+1 <= url.getLine() && url.getLine() < e.getEndB()+1) {
+						added.add(url);
+					} else if (url.getLine() >= e.getEndB()+1) {
+						break;
+					}
+					newIndex++;
+				}
+				//
+				if (deleted.size() > 0 && added.size() == 0) { 
+					for (int i=0; i<deleted.size(); i++) {
+						gen.writeStringField("Type", "DELETED");
+						gen.writeObjectField("OldURL", deleted.get(i).getURL());
+						gen.writeObjectField("OldLine", deleted.get(i).getLine());
+					}
+				} else if (deleted.size() == 0 && added.size() > 0) {
+					for (int i=0; i<added.size(); i++) {
+						gen.writeStringField("Type", "ADDED");
+						gen.writeObjectField("NewURL", added.get(i).getURL());
+						gen.writeObjectField("NewLine", added.get(i).getLine());
+					}
+				} else if (deleted.size() > 0 && added.size() > 0) {
+					// Compare the URLs
+					boolean changed = false;
+					if (deleted.size() == added.size()) {
+						for (int i=0; i<deleted.size(); i++) {
+							if (!deleted.get(i).getURL().equals(added.get(i).getURL())) {
+								changed = true;
 								break;
 							}
 						}
-						if (!found) {
-							gen.writeObjectFieldStart(Integer.toString(commentCount++));
-							if (insertedURLs.size() == 1) {
-								gen.writeStringField("Type", "REPLACED");
-								gen.writeObjectField("OldURL", old.getURL());
-								gen.writeObjectField("OldLine", old.getLine());
-								URLInComment url = insertedURLs.get(0);
-								gen.writeObjectField("NewURL", url.getURL());
-								gen.writeObjectField("NewLine", url.getLine());
-							} else if (insertedURLs.size() == 0) {
-								gen.writeStringField("Type", "DELETED");
-								gen.writeObjectField("OldURL", old.getURL());
-								gen.writeObjectField("OldLine", old.getLine());
-							} else {
-								gen.writeStringField("Type", "REPLACED+ADDED");
-								gen.writeObjectField("OldURL", old.getURL());
-								gen.writeObjectField("OldLine", old.getLine());
-								gen.writeObjectField("NewURLCount", insertedURLs.size());
-								for (int i=0; i<insertedURLs.size(); i++) {
-									URLInComment url = insertedURLs.get(i);
-									gen.writeObjectField("NewURL" + (i+1), url.getURL());
-									gen.writeObjectField("NewLine" + (i+1), url.getLine());
-								}
-							}
-							gen.writeEndObject();
-						}
-						
+					} else {
+						changed = true;
 					}
-				} // otherwise, the URL is not affected by a change
-			}
-			for (URLInComment newURL: newURLs) {
-				Edit e = findInsertOrReplace(editlist, newURL.getLine());
-				if (e != null) {
-					if (e.getType() == Type.INSERT) {
-						gen.writeObjectFieldStart(Integer.toString(commentCount++));
-						gen.writeStringField("Type", "ADDED");
-						gen.writeObjectField("NewURL", newURL.getURL());
-						gen.writeObjectField("NewLine", newURL.getLine());
-						gen.writeEndObject();
-					} else if (e.getType() == Type.REPLACE) {
-						List<URLInComment> deletedURLs = findURLs(oldURLs, e.getBeginA(), e.getEndA());
-						if (deletedURLs.size() == 0) {
-							// Newly added
-							gen.writeObjectFieldStart(Integer.toString(commentCount++));
-							gen.writeStringField("Type", "ADDED");
-							gen.writeObjectField("NewURL", newURL.getURL());
-							gen.writeObjectField("NewLine", newURL.getLine());
-							gen.writeEndObject();
-						} // otherwise, the newURL has been processed by the loop for oldURLs 
-					}					
+					if (changed) {
+						gen.writeStringField("Type", "REPLACED");
+						gen.writeObjectField("OldURLCount", deleted.size());
+						gen.writeObjectField("NewURLCount", added.size());
+						for (int i=0; i<deleted.size(); i++) {
+							gen.writeObjectField("OldURL" + (i+1), deleted.get(i).getURL());
+							gen.writeObjectField("OldLine" + (i+1), deleted.get(i).getLine());
+						}
+						for (int i=0; i<added.size(); i++) {
+							gen.writeObjectField("NewURL" + (i+1), added.get(i).getURL());
+							gen.writeObjectField("NewLine" + (i+1), added.get(i).getLine());
+						}
+					}
 				}
 			}
 		}
