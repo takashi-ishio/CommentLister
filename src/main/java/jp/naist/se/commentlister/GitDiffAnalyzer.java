@@ -9,6 +9,8 @@ import java.util.List;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.diff.DiffAlgorithm;
+import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
@@ -87,6 +89,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				try (Git git = new Git(repo)) {
 					try (DiffFormatter diff = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
 						diff.setRepository(repo);
+						diff.setDiffAlgorithm(DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM));
 						diff.setDiffComparator(RawTextComparator.DEFAULT);
 						diff.setDetectRenames(true);
 						try {
