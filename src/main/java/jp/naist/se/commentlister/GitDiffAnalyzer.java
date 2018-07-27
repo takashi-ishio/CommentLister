@@ -279,17 +279,18 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				while (comments.next()) {
 					String text = comments.getText();
 					int httpindex = text.indexOf("http");
-					int endLineIndex = text.indexOf('\n', httpindex);
-					if (endLineIndex < 0) endLineIndex = text.length();
 					
 					while (httpindex >= 0) {
+						int endLineIndex = text.indexOf('\n', httpindex);
+						if (endLineIndex < 0) endLineIndex = text.length();
+						
 						String line = text.substring(httpindex, endLineIndex);
 						if (line.endsWith("\r")) line = line.substring(0, line.length()-1);
-						line = line.trim();
-						if (line.endsWith(".")) line = line.substring(0, line.length()-1);
-						if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
-						if (line.endsWith("]")) line = line.substring(0, line.length()-1);
-						int index = line.lastIndexOf(',');
+						int index = line.indexOf(' ');
+						if (index > 0) line = line.substring(0, index);
+						index = line.indexOf('\t');
+						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf(',');
 						if (index > 0) line = line.substring(0, index);
 						index = line.lastIndexOf(')');
 						if (index > 0) line = line.substring(0, index);
@@ -303,11 +304,13 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						if (index > 0) line = line.substring(0, index);
 						index = line.lastIndexOf('}');
 						if (index > 0) line = line.substring(0, index);
+						index = line.lastIndexOf(']');
+						if (index > 0) line = line.substring(0, index);
+						if (line.endsWith(".")) line = line.substring(0, line.length()-1);
+						if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
 						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex)));
 						
 						httpindex = text.indexOf("http", endLineIndex+1);
-						endLineIndex = text.indexOf('\n', endLineIndex+1);
-						if (endLineIndex < 0) endLineIndex = text.length();
 					}
 				}
 			}
