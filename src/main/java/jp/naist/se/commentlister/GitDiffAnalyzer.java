@@ -188,30 +188,6 @@ public class GitDiffAnalyzer implements AutoCloseable {
 	}
 	
 	
-//	private static class ErrorRecorder { 
-//
-//		private PrintStream err;
-//		private ByteArrayOutputStream buffer;
-//		private PrintStream stream;
-//		
-//		public ErrorRecorder() {
-//			err = System.err;
-//			buffer = new ByteArrayOutputStream();
-//			stream = new PrintStream(buffer);
-//			System.setErr(stream);
-//		}
-//		
-//		public String close() {
-//			stream.close();
-//			String ret = null;
-//			if (buffer.size() > 0) {
-//				ret = buffer.toString();
-//			}
-//			System.setErr(err);
-//			return ret;
-//		}
-//	}
-	
 	private void analyzeAdd(String pathName, Repository repo, FileType t, AbbreviatedObjectId id) throws IOException {
 		analyzeFile(pathName, repo, t, id, "ADDED");
 	}
@@ -441,47 +417,6 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		}
 		
 		gen.writeEndObject();
-	}
-	
-	private Edit findRemoveOrReplace(EditList editlist, int line) {
-		for (Edit e: editlist) {
-			if (e.getType() == Type.INSERT) continue;
-			if (e.getBeginA()+1 <= line && line < e.getEndA()+1) {
-				return e;
-			} else if (line >= e.getEndA()+1) {
-				break;
-			}
-		}
-		return null;
-	}
-
-	private Edit findInsertOrReplace(EditList editlist, int line) {
-		for (Edit e: editlist) {
-			if (e.getType() == Type.DELETE) continue;
-			if (e.getBeginB()+1 <= line && line < e.getEndB()+1) {
-				return e;
-			} else if (line >= e.getEndB()+1) {
-				break;
-			}
-		}
-		return null;
-	}
-
-	private List<URLInComment> findURLs(List<URLInComment> urls, int start, int end) {
-		// Adjust DiffEntry indices to line numbers
-		start += 1; 
-		end += 1;
-		
-		// Search
-		ArrayList<URLInComment> filtered = new ArrayList<>();
-		for (URLInComment u: urls) {
-			if (start <= u.getLine() && u.getLine() < end) {
-				filtered.add(u);
-			} else if (u.getLine() >= end) {
-				break;
-			}
-		}
-		return filtered;
 	}
 	
 	/**
