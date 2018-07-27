@@ -363,12 +363,13 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						for (URLInComment u: insertedURLs) {
 							if (u.getURL().equals(old.getURL())) {
 								found = true;
-								gen.writeObjectFieldStart(Integer.toString(commentCount++));
-								gen.writeStringField("Type", "UNCHANGED");
-								gen.writeObjectField("OldURL", old.getURL());
-								gen.writeObjectField("OldLine", old.getLine());
-								gen.writeObjectField("NewLine", u.getLine());
-								gen.writeEndObject();
+								// "UNCHANGED" was used for debugging
+								//gen.writeObjectFieldStart(Integer.toString(commentCount++));
+								//gen.writeStringField("Type", "UNCHANGED");
+								//gen.writeObjectField("OldURL", old.getURL());
+								//gen.writeObjectField("OldLine", old.getLine());
+								//gen.writeObjectField("NewLine", u.getLine());
+								//gen.writeEndObject();
 								break;
 							}
 						}
