@@ -107,7 +107,7 @@ public class GitAnalyzer implements AutoCloseable {
 	/**
 	 * Make a short git repository name ("myApp/.git" or "myApp.git").
 	 */
-	private String makeRepoName(File gitDir) {
+	public static String makeRepoName(File gitDir) {
 		if (gitDir.getName().equals(".git")) {
 			return gitDir.getParentFile().getName() + "/.git";
 		} else {
