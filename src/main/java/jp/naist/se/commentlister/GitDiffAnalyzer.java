@@ -394,15 +394,19 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				//
 				if (deleted.size() > 0 && added.size() == 0) { 
 					for (int i=0; i<deleted.size(); i++) {
+						gen.writeObjectFieldStart(Integer.toString(commentCount++));
 						gen.writeStringField("Type", "DELETED");
 						gen.writeObjectField("OldURL", deleted.get(i).getURL());
 						gen.writeObjectField("OldLine", deleted.get(i).getLine());
+						gen.writeEndObject();
 					}
 				} else if (deleted.size() == 0 && added.size() > 0) {
 					for (int i=0; i<added.size(); i++) {
+						gen.writeObjectFieldStart(Integer.toString(commentCount++));
 						gen.writeStringField("Type", "ADDED");
 						gen.writeObjectField("NewURL", added.get(i).getURL());
 						gen.writeObjectField("NewLine", added.get(i).getLine());
+						gen.writeEndObject();
 					}
 				} else if (deleted.size() > 0 && added.size() > 0) {
 					// Compare the URLs
@@ -418,6 +422,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						changed = true;
 					}
 					if (changed) {
+						gen.writeObjectFieldStart(Integer.toString(commentCount++));
 						gen.writeStringField("Type", "REPLACED");
 						gen.writeObjectField("OldURLCount", deleted.size());
 						gen.writeObjectField("NewURLCount", added.size());
@@ -429,6 +434,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 							gen.writeObjectField("NewURL" + (i+1), added.get(i).getURL());
 							gen.writeObjectField("NewLine" + (i+1), added.get(i).getLine());
 						}
+						gen.writeEndObject();
 					}
 				}
 			}
