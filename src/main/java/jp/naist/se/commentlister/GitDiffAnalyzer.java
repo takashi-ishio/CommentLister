@@ -102,7 +102,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						diff.setDiffComparator(RawTextComparator.DEFAULT);
 						diff.setDetectRenames(true);
 						try {
-							Iterable<RevCommit> commits = git.log().add(lastCommitId).setMaxCount(100).call(); 
+							Iterable<RevCommit> commits = git.log().add(lastCommitId).call(); 
 
 							// For each commit in the history 
 							for (RevCommit commit: commits) {
