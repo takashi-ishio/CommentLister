@@ -1,10 +1,12 @@
 package jp.naist.se.commentlister;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -24,7 +26,10 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.revwalk.filter.SubStringRevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.util.RawCharSequence;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -43,6 +48,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 			System.err.println("Usage: path/to/.git lang");
 			return;
 		}
+		long t = System.currentTimeMillis();
 		try (GitDiffAnalyzer analyzer = new GitDiffAnalyzer(args[1])) {
 			File dir = new File(args[0]).getCanonicalFile();
 			String target = "HEAD";
@@ -53,6 +59,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		} catch (IOException e) {
 			 e.printStackTrace();
 		}
+		System.err.println(System.currentTimeMillis() - t);
 	}
 
 	private JsonGenerator gen;
@@ -72,6 +79,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		}
 	}
 	
+	
 	/**
 	 * @param gitDir is a .git directory.
 	 * @param target is a revision.
@@ -87,13 +95,14 @@ public class GitDiffAnalyzer implements AutoCloseable {
 			AnyObjectId lastCommitId = repo.resolve(target);
 			if (lastCommitId != null) {
 				try (Git git = new Git(repo)) {
-					try (DiffFormatter diff = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+					ByteArrayOutputStream out = new ByteArrayOutputStream();
+					try (DiffFormatter diff = new DiffFormatter(out)) {
 						diff.setRepository(repo);
 						diff.setDiffAlgorithm(DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM));
 						diff.setDiffComparator(RawTextComparator.DEFAULT);
 						diff.setDetectRenames(true);
 						try {
-							Iterable<RevCommit> commits = git.log().add(lastCommitId).call(); 
+							Iterable<RevCommit> commits = git.log().add(lastCommitId).setMaxCount(100).call(); 
 
 							// For each commit in the history 
 							for (RevCommit commit: commits) {
@@ -105,11 +114,19 @@ public class GitDiffAnalyzer implements AutoCloseable {
 									List<DiffEntry> entries = diff.scan(commit.getParent(0).getTree(), commit.getTree());
 									// For each modified file
 									for (DiffEntry entry: entries) {
+										
 										switch (entry.getChangeType()) {
 										case ADD:
 										{
 											FileType t = FileType.getFileType(entry.getNewPath());
 											if (isTargetLanguage(t)) {
+												diff.format(entry);
+												boolean inclusion = out.toString().contains("http");
+												out.reset();
+												if (!inclusion) {
+													continue;
+												}
+
 												analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
 											}
 											break;
@@ -118,6 +135,13 @@ public class GitDiffAnalyzer implements AutoCloseable {
 										{
 											FileType t = FileType.getFileType(entry.getOldPath());
 											if (isTargetLanguage(t)) {
+												diff.format(entry);
+												boolean inclusion = out.toString().contains("http");
+												out.reset();
+												if (!inclusion) {
+													continue;
+												}
+												
 												analyzeDelete(entry.getOldPath(), repo, t, entry.getOldId());
 											}
 											break;
@@ -126,6 +150,13 @@ public class GitDiffAnalyzer implements AutoCloseable {
 										{
 											FileType t = FileType.getFileType(entry.getNewPath());
 											if (isTargetLanguage(t)) {
+												diff.format(entry);
+												boolean inclusion = out.toString().contains("http");
+												out.reset();
+												if (!inclusion) {
+													continue;
+												}
+
 												analyzeAdd(entry.getNewPath(), repo, t, entry.getOldId());
 											}
 											break;
@@ -134,6 +165,13 @@ public class GitDiffAnalyzer implements AutoCloseable {
 										{
 											FileType t = FileType.getFileType(entry.getNewPath());
 											if (isTargetLanguage(t)) {
+												diff.format(entry);
+												boolean inclusion = out.toString().contains("http");
+												out.reset();
+												if (!inclusion) {
+													continue;
+												}
+
 												FileHeader h = diff.toFileHeader(entry);
 												analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
 											}
@@ -143,6 +181,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 											FileType t = FileType.getFileType(entry.getNewPath());
 											FileType told = FileType.getFileType(entry.getOldPath());
 											if (isTargetLanguage(t)) {
+												diff.format(entry);
+												boolean inclusion = out.toString().contains("http");
+												out.reset();
+												if (!inclusion) {
+													continue;
+												}
 												if (told == t) {
 													FileHeader h = diff.toFileHeader(entry);
 													analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
@@ -157,6 +201,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 												}
 											} else {
 												if (isTargetLanguage(told)) {
+													diff.format(entry);
+													boolean inclusion = out.toString().contains("http");
+													out.reset();
+													if (!inclusion) {
+														continue;
+													}
 													// Delete an language file and add a new file
 													analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
 												}												
