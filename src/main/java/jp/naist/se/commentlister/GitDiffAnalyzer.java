@@ -30,6 +30,9 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.revwalk.filter.SubStringRevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.RawCharSequence;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
@@ -107,6 +110,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 							if (objId != null) {
 								RevCommit commit = rev.parseCommit(objId);
 								rev.markStart(commit);
+								rev.setTreeFilter(TreeFilter.ANY_DIFF);
 	
 								// For each commit in the history 
 								for (commit = rev.next(); commit != null; commit = rev.next()) {
