@@ -249,6 +249,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 			gen.writeStringField("Type", type);
 			gen.writeObjectField("URL", url.getURL());
 			gen.writeObjectField("Line", url.getLine());
+			gen.writeObjectField("CommentLine", url.getCommentStartLine());
 			gen.writeEndObject();
 		}
 		gen.writeEndObject();
