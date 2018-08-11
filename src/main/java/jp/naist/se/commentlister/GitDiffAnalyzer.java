@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,11 +73,9 @@ public class GitDiffAnalyzer implements AutoCloseable {
 	
 	public static ArrayList<String> readTargetList(String filename) {
 		try (LineNumberReader reader = new LineNumberReader(new FileReader(new File(filename)))) {
-			ArrayList<String> list = new ArrayList<>(1024);
+			ArrayList<String> list = new ArrayList<>(65536);
 			for (String line=reader.readLine(); line !=null; line = reader.readLine()) {
 				list.add(line);
-				// FOR DEBUG
-				if (list.size() > 10) return list;
 			}
 			return list;
 		} catch (IOException e) {
@@ -122,101 +121,103 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				diff.setDiffComparator(RawTextComparator.DEFAULT);
 				diff.setDetectRenames(true);
 				
-//				try (RevWalk rev = new RevWalk(repo)) {
-					for (String target: targets) {
+				for (String target: targets) {
 
-						AnyObjectId commitId = repo.resolve(target);
-						if (commitId != null) {
-							RevCommit commit = repo.parseCommit(commitId);
+					AnyObjectId commitId = repo.resolve(target);
+					if (commitId != null) {
+						RevCommit commit = repo.parseCommit(commitId);
+						
+						RevCommit parent = null;
+						if (commit.getParentCount() > 0) {
+							parent = commit.getParent(0);
+						}
 
-							gen.writeObjectFieldStart(commit.getId().name());
-							gen.writeStringField("ShortMessage", commit.getShortMessage());
-							gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
+						gen.writeObjectFieldStart(commit.getId().name());
+						gen.writeStringField("ShortMessage", commit.getShortMessage());
+						gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
+						
+						List<DiffEntry> entries = diff.scan(parent, commit);
 							
-							RevTree prev = (commit.getParentCount() > 0) ? commit.getParent(0).getTree(): null; 
-							List<DiffEntry> entries = diff.scan(prev, commit.getTree());
-								
-							// For each modified file
-							for (DiffEntry entry: entries) {
-								
-								switch (entry.getChangeType()) {
-								case ADD:
-								{
-									FileType t = FileType.getFileType(entry.getNewPath());
-									if (isTargetLanguage(t)) {
-										analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-									}
-									break;
+						// For each modified file
+						for (DiffEntry entry: entries) {
+							
+							switch (entry.getChangeType()) {
+							case ADD:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
 								}
-								case DELETE:
-								{
-									FileType t = FileType.getFileType(entry.getOldPath());
-									if (isTargetLanguage(t)) {
-										analyzeDelete(entry.getOldPath(), repo, t, entry.getOldId());
+								break;
+							}
+							case DELETE:
+							{
+								FileType t = FileType.getFileType(entry.getOldPath());
+								if (isTargetLanguage(t)) {
+									analyzeDelete(entry.getOldPath(), repo, t, entry.getOldId());
+								}
+								break;
+							}											
+							case COPY:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									analyzeAdd(entry.getNewPath(), repo, t, entry.getOldId());
+								}
+								break;
+							}	
+							case MODIFY:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									out.reset();
+									diff.format(entry);
+									boolean inclusion = out.toString().contains("http");
+									if (!inclusion) {
+										continue;
 									}
-									break;
-								}											
-								case COPY:
-								{
-									FileType t = FileType.getFileType(entry.getNewPath());
-									if (isTargetLanguage(t)) {
-										analyzeAdd(entry.getNewPath(), repo, t, entry.getOldId());
-									}
-									break;
-								}	
-								case MODIFY:
-								{
-									FileType t = FileType.getFileType(entry.getNewPath());
-									if (isTargetLanguage(t)) {
-										out.reset();
-										diff.format(entry);
-										boolean inclusion = out.toString().contains("http");
-										if (!inclusion) {
-											continue;
-										}
 
+									FileHeader h = diff.toFileHeader(entry);
+									analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
+								}
+								break;
+							}	
+							case RENAME: // Rename and modify
+								FileType t = FileType.getFileType(entry.getNewPath());
+								FileType told = FileType.getFileType(entry.getOldPath());
+								if (isTargetLanguage(t)) {
+									out.reset();
+									diff.format(entry);
+									boolean inclusion = out.toString().contains("http");
+									if (!inclusion) {
+										continue;
+									}
+									if (told == t) {
 										FileHeader h = diff.toFileHeader(entry);
 										analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
-									}
-									break;
-								}	
-								case RENAME: // Rename and modify
-									FileType t = FileType.getFileType(entry.getNewPath());
-									FileType told = FileType.getFileType(entry.getOldPath());
-									if (isTargetLanguage(t)) {
-										out.reset();
-										diff.format(entry);
-										boolean inclusion = out.toString().contains("http");
-										if (!inclusion) {
-											continue;
-										}
-										if (told == t) {
-											FileHeader h = diff.toFileHeader(entry);
-											analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
-										} else {
-											if (isTargetLanguage(told)) {
-												// Delete an language file and add a new file
-												analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
-												analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-											} else {
-												analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-											}
-										}
 									} else {
 										if (isTargetLanguage(told)) {
 											// Delete an language file and add a new file
 											analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
-										}												
+											analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
+										} else {
+											analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
+										}
 									}
-									break;
+								} else {
+									if (isTargetLanguage(told)) {
+										// Delete an language file and add a new file
+										analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
+									}												
 								}
+								break;
 							}
-							gen.writeEndObject();
-						} else {
-							System.err.println("Error: " + target + " is not a commit ID.");
 						}
+						gen.writeEndObject();
+					} else {
+						System.err.println("Error: " + target + " is not a commit ID.");
 					}
-//				}
+				}
 			}
 			gen.writeEndObject();
 		} catch (IOException e) {
