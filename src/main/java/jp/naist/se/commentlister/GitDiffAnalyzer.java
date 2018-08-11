@@ -122,13 +122,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 				diff.setDiffComparator(RawTextComparator.DEFAULT);
 				diff.setDetectRenames(true);
 				
-				try (RevWalk rev = new RevWalk(repo)) {
+//				try (RevWalk rev = new RevWalk(repo)) {
 					for (String target: targets) {
-						rev.reset();
 
 						AnyObjectId commitId = repo.resolve(target);
 						if (commitId != null) {
-							RevCommit commit = rev.parseCommit(commitId);
+							RevCommit commit = repo.parseCommit(commitId);
 
 							gen.writeObjectFieldStart(commit.getId().name());
 							gen.writeStringField("ShortMessage", commit.getShortMessage());
@@ -169,9 +168,9 @@ public class GitDiffAnalyzer implements AutoCloseable {
 								{
 									FileType t = FileType.getFileType(entry.getNewPath());
 									if (isTargetLanguage(t)) {
+										out.reset();
 										diff.format(entry);
 										boolean inclusion = out.toString().contains("http");
-										out.reset();
 										if (!inclusion) {
 											continue;
 										}
@@ -185,9 +184,9 @@ public class GitDiffAnalyzer implements AutoCloseable {
 									FileType t = FileType.getFileType(entry.getNewPath());
 									FileType told = FileType.getFileType(entry.getOldPath());
 									if (isTargetLanguage(t)) {
+										out.reset();
 										diff.format(entry);
 										boolean inclusion = out.toString().contains("http");
-										out.reset();
 										if (!inclusion) {
 											continue;
 										}
@@ -217,7 +216,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 							System.err.println("Error: " + target + " is not a commit ID.");
 						}
 					}
-				}
+//				}
 			}
 			gen.writeEndObject();
 		} catch (IOException e) {
