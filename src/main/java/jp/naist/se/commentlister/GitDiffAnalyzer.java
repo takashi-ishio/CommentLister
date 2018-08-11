@@ -67,7 +67,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		} catch (IOException e) {
 			 e.printStackTrace();
 		}
-		System.err.println(args[0] + "," + System.currentTimeMillis() - t);
+		System.err.println(args[0] + "," + (System.currentTimeMillis() - t));
 	}
 	
 	public static ArrayList<String> readTargetList(String filename) {
