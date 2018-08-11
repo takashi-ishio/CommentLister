@@ -258,10 +258,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 
 		private String url;
 		private int line;
+		private int commentStartLine;
 		
-		public URLInComment(String url, int line) {
+		public URLInComment(String url, int line, int commentStart) {
 			this.url = url;
 			this.line = line;
+			this.commentStartLine = commentStart; 
 		}
 		
 		public int getLine() {
@@ -270,6 +272,10 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		
 		public String getURL() {
 			return url;
+		}
+		
+		public int getCommentStartLine() {
+			return commentStartLine;
 		}
 	}
 	
@@ -329,7 +335,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						if (index > 0) line = line.substring(0, index);
 						if (line.endsWith(".")) line = line.substring(0, line.length()-1);
 						if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
-						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex)));
+						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex), comments.getLine()));
 						
 						httpindex = text.indexOf("http", endLineIndex+1);
 					}
@@ -363,6 +369,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "ADDED");
 						gen.writeObjectField("NewURL", url.getURL());
 						gen.writeObjectField("NewLine", url.getLine());
+						gen.writeObjectField("NewCommentLine", url.getCommentStartLine());
 						gen.writeEndObject();
 					} else if (url.getLine() >= e.getEndB()+1) {
 						// The URL should be checked for the next difference
@@ -379,6 +386,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "DELETED");
 						gen.writeObjectField("OldURL", url.getURL());
 						gen.writeObjectField("OldLine", url.getLine());
+						gen.writeObjectField("OldCommentLine", url.getCommentStartLine());
 						gen.writeEndObject();
 					} else if (url.getLine() >= e.getEndA()+1) {
 						// The URL should be checked for the next difference
@@ -416,6 +424,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "DELETED");
 						gen.writeObjectField("OldURL", deleted.get(i).getURL());
 						gen.writeObjectField("OldLine", deleted.get(i).getLine());
+						gen.writeObjectField("OldCommentLine", deleted.get(i).getCommentStartLine());
 						gen.writeEndObject();
 					}
 				} else if (deleted.size() == 0 && added.size() > 0) {
@@ -424,6 +433,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "ADDED");
 						gen.writeObjectField("NewURL", added.get(i).getURL());
 						gen.writeObjectField("NewLine", added.get(i).getLine());
+						gen.writeObjectField("NewCommentLine", added.get(i).getCommentStartLine());
 						gen.writeEndObject();
 					}
 				} else if (deleted.size() > 0 && added.size() > 0) {
@@ -447,10 +457,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						for (int i=0; i<deleted.size(); i++) {
 							gen.writeObjectField("OldURL" + (i+1), deleted.get(i).getURL());
 							gen.writeObjectField("OldLine" + (i+1), deleted.get(i).getLine());
+							gen.writeObjectField("OldCommentLine" + (i+1), deleted.get(i).getCommentStartLine());
 						}
 						for (int i=0; i<added.size(); i++) {
 							gen.writeObjectField("NewURL" + (i+1), added.get(i).getURL());
 							gen.writeObjectField("NewLine" + (i+1), added.get(i).getLine());
+							gen.writeObjectField("NewCommentLine" + (i+1), added.get(i).getCommentStartLine());
 						}
 						gen.writeEndObject();
 					}
