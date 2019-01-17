@@ -2,14 +2,13 @@ package jp.naist.se.commentlister;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.diff.DiffAlgorithm;
 import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -26,7 +25,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
@@ -39,22 +37,35 @@ public class GitDiffAnalyzer implements AutoCloseable {
 	 * @param args specify a directory and a programming language.
 	 */
 	public static void main(String[] args) { 
-		if (args.length != 2) {
-			System.err.println("Usage: path/to/.git lang");
+		if (args.length != 3) {
+			System.err.println("Usage: path/to/.git lang COMMIT-LIST-FILE");
 			return;
 		}
 		long t = System.currentTimeMillis();
 		try (GitDiffAnalyzer analyzer = new GitDiffAnalyzer(args[1])) {
 			File dir = new File(args[0]).getCanonicalFile();
-			String target = "HEAD";
+			ArrayList<String> targets = readTargetList(args[2]);
+			
 			File gitDir = GitAnalyzer.ensureGitDir(dir);
 			if (gitDir != null) {
-				analyzer.parseGitRepository(gitDir, target);
+				analyzer.parseGitRepository(gitDir, targets);
 			}
 		} catch (IOException e) {
 			 e.printStackTrace();
 		}
-		System.err.println(System.currentTimeMillis() - t);
+		System.err.println(args[0] + "," + (System.currentTimeMillis() - t));
+	}
+	
+	public static ArrayList<String> readTargetList(String filename) {
+		try (LineNumberReader reader = new LineNumberReader(new FileReader(new File(filename)))) {
+			ArrayList<String> list = new ArrayList<>(65536);
+			for (String line=reader.readLine(); line !=null; line = reader.readLine()) {
+				list.add(line);
+			}
+			return list;
+		} catch (IOException e) {
+			return new ArrayList<>(0);
+		}
 	}
 
 	private JsonGenerator gen;
@@ -79,7 +90,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 	 * @param gitDir is a .git directory.
 	 * @param target is a revision.
 	 */
-	public void parseGitRepository(File gitDir, String target) {
+	public void parseGitRepository(File gitDir, ArrayList<String> targets) {
 		File dir = GitAnalyzer.ensureGitDir(gitDir);
 		if (dir == null) return;
 
@@ -87,140 +98,111 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		b.setGitDir(gitDir);
 		try (Repository repo = b.build()) {
 			gen.writeStartObject();
-			AnyObjectId lastCommitId = repo.resolve(target);
-			if (lastCommitId != null) {
-				try (Git git = new Git(repo)) {
-					ByteArrayOutputStream out = new ByteArrayOutputStream();
-					try (DiffFormatter diff = new DiffFormatter(out)) {
-						diff.setRepository(repo);
-						diff.setDiffAlgorithm(DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM));
-						diff.setDiffComparator(RawTextComparator.DEFAULT);
-						diff.setDetectRenames(true);
-						try {
-							Iterable<RevCommit> commits = git.log().add(lastCommitId).call(); 
+			
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			try (DiffFormatter diff = new DiffFormatter(out)) {
+				diff.setRepository(repo);
+				diff.setDiffAlgorithm(DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM));
+				diff.setDiffComparator(RawTextComparator.DEFAULT);
+				diff.setDetectRenames(true);
+				
+				for (String target: targets) {
 
-							// For each commit in the history 
-							for (RevCommit commit: commits) {
-								if (commit.getParentCount() > 0) {
-									
-									gen.writeObjectFieldStart(commit.getId().name());
-									gen.writeStringField("ShortMessage", commit.getShortMessage());
-									gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
-									List<DiffEntry> entries = diff.scan(commit.getParent(0).getTree(), commit.getTree());
-									// For each modified file
-									for (DiffEntry entry: entries) {
-										
-										switch (entry.getChangeType()) {
-										case ADD:
-										{
-											FileType t = FileType.getFileType(entry.getNewPath());
-											if (isTargetLanguage(t)) {
-												diff.format(entry);
-												boolean inclusion = out.toString().contains("http");
-												out.reset();
-												if (!inclusion) {
-													continue;
-												}
+					AnyObjectId commitId = repo.resolve(target);
+					if (commitId != null) {
+						RevCommit commit = repo.parseCommit(commitId);
+						
+						RevCommit parent = null;
+						if (commit.getParentCount() > 0) {
+							parent = commit.getParent(0);
+						}
 
-												analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-											}
-											break;
-										}
-										case DELETE:
-										{
-											FileType t = FileType.getFileType(entry.getOldPath());
-											if (isTargetLanguage(t)) {
-												diff.format(entry);
-												boolean inclusion = out.toString().contains("http");
-												out.reset();
-												if (!inclusion) {
-													continue;
-												}
-												
-												analyzeDelete(entry.getOldPath(), repo, t, entry.getOldId());
-											}
-											break;
-										}											
-										case COPY:
-										{
-											FileType t = FileType.getFileType(entry.getNewPath());
-											if (isTargetLanguage(t)) {
-												diff.format(entry);
-												boolean inclusion = out.toString().contains("http");
-												out.reset();
-												if (!inclusion) {
-													continue;
-												}
+						gen.writeObjectFieldStart(commit.getId().name());
+						gen.writeStringField("ShortMessage", commit.getShortMessage());
+						gen.writeStringField("CommitTime", epochToISO(commit.getCommitTime()));
+						
+						List<DiffEntry> entries = diff.scan(parent, commit);
+							
+						// For each modified file
+						for (DiffEntry entry: entries) {
+							
+							switch (entry.getChangeType()) {
+							case ADD:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
+								}
+								break;
+							}
+							case DELETE:
+							{
+								FileType t = FileType.getFileType(entry.getOldPath());
+								if (isTargetLanguage(t)) {
+									analyzeDelete(entry.getOldPath(), repo, t, entry.getOldId());
+								}
+								break;
+							}											
+							case COPY:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									analyzeAdd(entry.getNewPath(), repo, t, entry.getOldId());
+								}
+								break;
+							}	
+							case MODIFY:
+							{
+								FileType t = FileType.getFileType(entry.getNewPath());
+								if (isTargetLanguage(t)) {
+									out.reset();
+									diff.format(entry);
+									boolean inclusion = out.toString().contains("http");
+									if (!inclusion) {
+										continue;
+									}
 
-												analyzeAdd(entry.getNewPath(), repo, t, entry.getOldId());
-											}
-											break;
-										}	
-										case MODIFY:
-										{
-											FileType t = FileType.getFileType(entry.getNewPath());
-											if (isTargetLanguage(t)) {
-												diff.format(entry);
-												boolean inclusion = out.toString().contains("http");
-												out.reset();
-												if (!inclusion) {
-													continue;
-												}
-
-												FileHeader h = diff.toFileHeader(entry);
-												analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
-											}
-											break;
-										}	
-										case RENAME: // Rename and modify
-											FileType t = FileType.getFileType(entry.getNewPath());
-											FileType told = FileType.getFileType(entry.getOldPath());
-											if (isTargetLanguage(t)) {
-												diff.format(entry);
-												boolean inclusion = out.toString().contains("http");
-												out.reset();
-												if (!inclusion) {
-													continue;
-												}
-												if (told == t) {
-													FileHeader h = diff.toFileHeader(entry);
-													analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
-												} else {
-													if (isTargetLanguage(told)) {
-														// Delete an language file and add a new file
-														analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
-														analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-													} else {
-														analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
-													}
-												}
-											} else {
-												if (isTargetLanguage(told)) {
-													diff.format(entry);
-													boolean inclusion = out.toString().contains("http");
-													out.reset();
-													if (!inclusion) {
-														continue;
-													}
-													// Delete an language file and add a new file
-													analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
-												}												
-											}
-											break;
+									FileHeader h = diff.toFileHeader(entry);
+									analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
+								}
+								break;
+							}	
+							case RENAME: // Rename and modify
+								FileType t = FileType.getFileType(entry.getNewPath());
+								FileType told = FileType.getFileType(entry.getOldPath());
+								if (isTargetLanguage(t)) {
+									out.reset();
+									diff.format(entry);
+									boolean inclusion = out.toString().contains("http");
+									if (!inclusion) {
+										continue;
+									}
+									if (told == t) {
+										FileHeader h = diff.toFileHeader(entry);
+										analyzeModify(entry.getNewPath(), repo, t, entry.getOldId(), entry.getNewId(), h.toEditList());
+									} else {
+										if (isTargetLanguage(told)) {
+											// Delete an language file and add a new file
+											analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
+											analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
+										} else {
+											analyzeAdd(entry.getNewPath(), repo, t, entry.getNewId());
 										}
 									}
-									gen.writeEndObject();
+								} else {
+									if (isTargetLanguage(told)) {
+										// Delete an language file and add a new file
+										analyzeDelete(entry.getOldPath(), repo, told, entry.getOldId());
+									}												
 								}
+								break;
 							}
-						} catch (NoHeadException e) {
-							System.err.println("Error: HEAD does not exist.");
-						} catch (GitAPIException e) {
-							e.printStackTrace();
 						}
+						gen.writeEndObject();
+					} else {
+						System.err.println("Error: " + target + " is not a commit ID.");
 					}
 				}
-			} else {
-				System.err.println("Error: " + target + " is not a commit ID.");
 			}
 			gen.writeEndObject();
 		} catch (IOException e) {
@@ -252,6 +234,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 			gen.writeStringField("Type", type);
 			gen.writeObjectField("URL", url.getURL());
 			gen.writeObjectField("Line", url.getLine());
+			gen.writeObjectField("CommentLine", url.getCommentStartLine());
 			gen.writeEndObject();
 		}
 		gen.writeEndObject();
@@ -261,10 +244,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 
 		private String url;
 		private int line;
+		private int commentStartLine;
 		
-		public URLInComment(String url, int line) {
+		public URLInComment(String url, int line, int commentStart) {
 			this.url = url;
 			this.line = line;
+			this.commentStartLine = commentStart; 
 		}
 		
 		public int getLine() {
@@ -273,6 +258,10 @@ public class GitDiffAnalyzer implements AutoCloseable {
 		
 		public String getURL() {
 			return url;
+		}
+		
+		public int getCommentStartLine() {
+			return commentStartLine;
 		}
 	}
 	
@@ -334,7 +323,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						if (index > 0) line = line.substring(0, index);
 						if (line.endsWith(".")) line = line.substring(0, line.length()-1);
 						if (line.endsWith("\\")) line = line.substring(0, line.length()-1);
-						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex)));
+						urls.add(new URLInComment(line, comments.getLine() + getRelativeLinePos(text, httpindex), comments.getLine()));
 						
 						httpindex = text.indexOf("http", endLineIndex+1);
 					}
@@ -368,6 +357,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "ADDED");
 						gen.writeObjectField("NewURL", url.getURL());
 						gen.writeObjectField("NewLine", url.getLine());
+						gen.writeObjectField("NewCommentLine", url.getCommentStartLine());
 						gen.writeEndObject();
 					} else if (url.getLine() >= e.getEndB()+1) {
 						// The URL should be checked for the next difference
@@ -384,6 +374,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "DELETED");
 						gen.writeObjectField("OldURL", url.getURL());
 						gen.writeObjectField("OldLine", url.getLine());
+						gen.writeObjectField("OldCommentLine", url.getCommentStartLine());
 						gen.writeEndObject();
 					} else if (url.getLine() >= e.getEndA()+1) {
 						// The URL should be checked for the next difference
@@ -421,6 +412,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "DELETED");
 						gen.writeObjectField("OldURL", deleted.get(i).getURL());
 						gen.writeObjectField("OldLine", deleted.get(i).getLine());
+						gen.writeObjectField("OldCommentLine", deleted.get(i).getCommentStartLine());
 						gen.writeEndObject();
 					}
 				} else if (deleted.size() == 0 && added.size() > 0) {
@@ -429,6 +421,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						gen.writeStringField("Type", "ADDED");
 						gen.writeObjectField("NewURL", added.get(i).getURL());
 						gen.writeObjectField("NewLine", added.get(i).getLine());
+						gen.writeObjectField("NewCommentLine", added.get(i).getCommentStartLine());
 						gen.writeEndObject();
 					}
 				} else if (deleted.size() > 0 && added.size() > 0) {
@@ -452,10 +445,12 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						for (int i=0; i<deleted.size(); i++) {
 							gen.writeObjectField("OldURL" + (i+1), deleted.get(i).getURL());
 							gen.writeObjectField("OldLine" + (i+1), deleted.get(i).getLine());
+							gen.writeObjectField("OldCommentLine" + (i+1), deleted.get(i).getCommentStartLine());
 						}
 						for (int i=0; i<added.size(); i++) {
 							gen.writeObjectField("NewURL" + (i+1), added.get(i).getURL());
 							gen.writeObjectField("NewLine" + (i+1), added.get(i).getLine());
+							gen.writeObjectField("NewCommentLine" + (i+1), added.get(i).getCommentStartLine());
 						}
 						gen.writeEndObject();
 					}
