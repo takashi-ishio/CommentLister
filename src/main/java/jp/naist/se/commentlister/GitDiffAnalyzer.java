@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -26,11 +25,7 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
-import org.eclipse.jgit.revwalk.filter.SubStringRevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.util.RawCharSequence;
-import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -40,8 +35,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 public class GitDiffAnalyzer implements AutoCloseable {
 
 	/**
-	 * Extract comments from Git directories.
-	 * @param args specify directories.
+	 * Extract modified comments including "http" from a Git repository.
+	 * @param args specify a directory and a programming language.
 	 */
 	public static void main(String[] args) { 
 		if (args.length != 2) {
@@ -313,6 +308,8 @@ public class GitDiffAnalyzer implements AutoCloseable {
 						int endLineIndex = text.indexOf('\n', httpindex);
 						if (endLineIndex < 0) endLineIndex = text.length();
 						
+						// Remove special symbols from the end of a http link.
+						// This code comes from a script that extracts http links from GitAnalyzer result. 
 						String line = text.substring(httpindex, endLineIndex);
 						if (line.endsWith("\r")) line = line.substring(0, line.length()-1);
 						int index = line.indexOf(' ');

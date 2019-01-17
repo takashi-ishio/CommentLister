@@ -17,7 +17,6 @@ import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectStream;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -37,8 +36,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 public class GitAnalyzer implements AutoCloseable {
 
 	/**
-	 * Extract comments from Git directories.
-	 * @param args specify directories.
+	 * Extract all comments from Git directories.
+	 * @param args specify a directory and a tag.
 	 */
 	public static void main(String[] args) { 
 		if (args.length == 0 || args.length > 2) {
