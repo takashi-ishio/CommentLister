@@ -34,7 +34,7 @@ public class GitDiffAnalyzer implements AutoCloseable {
 
 	/**
 	 * Extract modified comments including "http" from a Git repository.
-	 * @param args specify a directory and a programming language.
+	 * @param args specify a directory, a programming language, and a list of commits (one commit id per line) to be analyzed.
 	 */
 	public static void main(String[] args) { 
 		if (args.length != 3) {

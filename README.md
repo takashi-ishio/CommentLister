@@ -6,7 +6,7 @@ The project uses Maven.
 You can make a runnable jar `CommentLister.jar` by executing `mvn package`. 
 
 
-## Usage
+## Usage of Comment Extraction
 
 This tool automatically extracts comment in source code stored in a git repository.
 The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, and C#. 
@@ -66,6 +66,48 @@ The following JSON is an actual example extracted from the project's git reposit
           "ElapsedTime" : 562
         }
 
+
+
+## Usage of Modified URL Extraction 
+
+`GitDiffAnalyzer` extracts modified http(s) links from commits, while the main class of the tool (`jp.naist.se.commentlister.GitAnalyzer`) extracts all comments from a particular revision. 
+The class requires three options: 
+ - file path to repository, 
+ - a programming language (one of CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, and RUBY)
+ - a list of commits to be analyzed (you can make it by `git log --pretty=format:%H`)
+
+The class reports added/deleted/modified URLs in a JSON format.
+For each commit, comments including URLs are listed. 
+An example is following: 
+
+        {
+          "41c0d21c53fd9b4e225be2eaa031ad8e13c25f88" : {
+            "ShortMessage" : "Commit without URL change",
+            "CommitTime" : "2018-08-08T02:26:47Z"
+          },
+          "2fe221a11d3c485861317e9747d02abec74b807e" : {
+            "ShortMessage" : "Replaced URLs",
+            "CommitTime" : "2018-07-27T05:22:32Z",
+            "src/example/F.java" : {
+              "FileEditType" : "MODIFIED",
+              "0" : {
+                "Type" : "DELETED",
+                "OldURL" : "http://github.com/takashi-ishio/3",
+                "OldLine" : 11,
+                "OldCommentLine" : 10
+              },
+              "1" : {
+                "Type" : "ADDED",
+                "NewURL" : "http://github.com/takashi-ishio/3",
+                "NewLine" : 12,
+                "NewCommentLine" : 10
+              }
+            }
+          }
+        }
+
+
+
 ## Supported Languages
 
 The tool chooses a lexer for a source file using its file extension (case-insensitive).
@@ -98,10 +140,6 @@ Note that single-line comments in consecutive lines are regarded as a single mul
 int x = 0;   // 1st line
              // 2nd line
 ```
-
-
-
-## 
 
 
 ## Performance
