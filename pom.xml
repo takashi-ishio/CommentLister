@@ -91,7 +91,7 @@
   		<version>1.7.2</version>
   	</dependency>
   	<dependency>
-    <groupId>org.jruby</groupId>
+	    <groupId>org.jruby</groupId>
 	    <artifactId>jruby-complete</artifactId>
 	    <version>9.1.17.0</version>
 	</dependency>
