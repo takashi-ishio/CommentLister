@@ -76,6 +76,11 @@ The class requires three options:
  - a programming language (one of CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, and RUBY)
  - a list of commits to be analyzed (you can make it by `git log --pretty=format:%H`)
 
+The following commands extract URL changes from a repository in the current directory.
+
+     git log --pretty=format:%H > commitid.txt
+     java -classpath CommentLister.jar jp.naist.se.commentlister.GitDiffAnalyzer . java commitid.txt
+
 The class reports added/deleted/modified URLs in a JSON format.
 For each commit, comments including URLs are listed. 
 An example is following: 
