@@ -83,7 +83,7 @@ The following commands extract URL changes from a repository in the current dire
 
 The class reports added/deleted/modified URLs in a JSON format.
 For each commit, comments including URLs are listed. 
-An example is following: 
+An example extracted from <https://github.com/takashi-ishio/CommentLister-Test> repository is following: 
 
         {
           "41c0d21c53fd9b4e225be2eaa031ad8e13c25f88" : {
