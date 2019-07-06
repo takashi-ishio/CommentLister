@@ -1,5 +1,12 @@
 # Comment Lister: Code Comment Listing Tool for Git repository
 
+This tool automatically extracts comment in source code stored in a git repository.
+The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, Ruby, and C#. 
+
+This tool has been developed for writing the following paper: 
+> Hideaki Hata, Christophe Treude, Raula Gaikovina Kula, Takashi Ishio:
+> 9.6 million links in source code comments: purpose, evolution, and decay (ICSE 2019)
+
 ## Build
 
 The project uses Maven.  
@@ -7,9 +14,6 @@ You can make a runnable jar `CommentLister.jar` by executing `mvn package`.
 
 
 ## Usage of Comment Extraction
-
-This tool automatically extracts comment in source code stored in a git repository.
-The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, Ruby, and C#. 
 
 The tool takes a file path to a git repository to be analyzed, for example:
 
