@@ -78,7 +78,7 @@ public class GitAnalyzer implements AutoCloseable {
 	 * @param dir
 	 * @return dir itself if it is a .git directory.
 	 * If it includes .git as a subdirectory, the subdirectory is returned.  
-	 * The method returns null if dir is not .git directory. 
+	 * The method returns null if dir is not a directory. 
 	 */
 	public static File ensureGitDir(File dir) {
 		if (dir.isDirectory()) {
@@ -98,6 +98,7 @@ public class GitAnalyzer implements AutoCloseable {
 				if (candidates.length > 0) {
 					return candidates[0];
 				}
+				return dir;
 			}
 		}
 		return null;
