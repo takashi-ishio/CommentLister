@@ -1,20 +1,25 @@
 package jp.naist.se.commentlister;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.antlr.v4.runtime.CaseChangingCharStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.Token;
 
+import jp.naist.se.commentlister.lexer.CMakeLexer;
 import jp.naist.se.commentlister.lexer.CPP14Lexer;
 import jp.naist.se.commentlister.lexer.CSharpLexer;
 import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
+import jp.naist.se.commentlister.lexer.MakefileComment;
 import jp.naist.se.commentlister.lexer.PhpLexer;
 import jp.naist.se.commentlister.lexer.Python3Lexer;
 import jp.naist.se.commentlister.ruby.RubyCommentReader;
@@ -22,11 +27,11 @@ import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, MAKEFILE;
 
-	private static HashMap<String, FileType> filetype;
+	private static HashMap<String, FileType> filetype = new HashMap<>(64);
+	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
 	static {
-		filetype = new HashMap<>(64);
 		filetype.put("c", FileType.CPP);
 		filetype.put("cc", FileType.CPP);
 		filetype.put("cp", FileType.CPP);
@@ -54,17 +59,38 @@ public enum FileType {
 		filetype.put("php", FileType.PHP);
 		
 		filetype.put("rb", FileType.RUBY);
+
+		filetype.put("pro", FileType.MAKEFILE);	
+		filetype.put("pri", FileType.MAKEFILE);
+
+		specialFileNames.put("CMakeLists.txt", FileType.CMAKE);	
+		specialFileNames.put("Makefile", FileType.MAKEFILE);	
+
+		specialFileNames.put("cpp", FileType.CPP);
+		specialFileNames.put("java", FileType.JAVA);
+		specialFileNames.put("ecmascript", FileType.ECMASCRIPT);
+		specialFileNames.put("csharp", FileType.CSHARP);
+		specialFileNames.put("python", FileType.PYTHON);
+		specialFileNames.put("php", FileType.PHP);
+		specialFileNames.put("ruby", FileType.RUBY);
+		specialFileNames.put("cmake", FileType.CMAKE);
+		specialFileNames.put("makefile", FileType.MAKEFILE);
 	}
 	
 	public static FileType getFileType(String filename) {
 		// Remove directories 
-		int index = filename.lastIndexOf("/");
+		int index = filename.lastIndexOf(File.separator);
 		filename = filename.substring(index+1);
 		
 		if (filename.startsWith("._")) { // Mac OS's backup file
 			return FileType.UNSUPPORTED;
 		}
 		
+		// Check special names
+		FileType t = specialFileNames.get(filename);
+		if (t != null) return t;
+		
+		// Check extensions
 		index = filename.lastIndexOf('.');
 		if (index < 0) {
 			return FileType.UNSUPPORTED;
@@ -180,6 +206,27 @@ public enum FileType {
 			// unsupported 
 			return null;
 		}
+		case MAKEFILE:
+		{
+			MakefileComment lexer = new MakefileComment(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return t.getType() == MakefileComment.COMMENT;
+				}
+			});
+		}
+		case CMAKE:
+		{
+			CMakeLexer lexer = new CMakeLexer(stream);
+			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
+				@Override
+				public boolean accept(Token t) {
+					return (t.getType() == CMakeLexer.Bracket_comment ||
+							t.getType() == CMakeLexer.Line_comment);
+				}
+			});
+		}
 		default:
 			return null;
 		
@@ -214,5 +261,35 @@ public enum FileType {
 			return null;
 		}
 	}
+	
+	public static HashSet<FileType> getAllTypes() {
+		HashSet<FileType> types = new HashSet<>();
+		types.add(FileType.CPP);
+		types.add(FileType.JAVA);
+		types.add(FileType.ECMASCRIPT);
+		types.add(FileType.CSHARP);
+		types.add(FileType.PYTHON);
+		types.add(FileType.PHP);
+		types.add(FileType.RUBY);
+		types.add(FileType.CMAKE);
+		types.add(FileType.MAKEFILE);
+		return types;
+	}
+	
+	public static HashSet<FileType> getFileTypes(String[] args) {
+		HashSet<FileType> types = new HashSet<>();
+		for (String arg: args) {
+			FileType t = getFileType(arg);
+			if (isSupported(t)) {
+				types.add(t);
+			}
+			t = specialFileNames.get(arg.toLowerCase());
+			if (isSupported(t)) {
+				types.add(t);
+			}
+		}
+		return types;
+	}
+	
 
 }

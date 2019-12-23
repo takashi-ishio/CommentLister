@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -35,21 +36,42 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 public class GitAnalyzer implements AutoCloseable {
 
+	private static final String ARG_TARGET = "--target=";
+	private static final String ARG_TYPE = "--type=";
+	
 	/**
 	 * Extract all comments from Git directories.
 	 * @param args specify a directory and a tag.
 	 */
 	public static void main(String[] args) { 
-		if (args.length == 0 || args.length > 2) {
-			System.err.println("Usage: path/to/.git [tag/commitId]");
+		
+		// Default configuration
+		File dir = null;
+		String target = "HEAD";
+		HashSet<FileType> types = FileType.getAllTypes();
+		
+		for (String arg: args) {
+			if (arg.startsWith(ARG_TARGET)) {
+				target = arg.substring(ARG_TARGET.length());
+			} else if (arg.startsWith(ARG_TYPE)) {
+				types = FileType.getFileTypes(arg.substring(ARG_TYPE.length()).split(","));
+			} else {
+				try {
+					dir = new File(arg).getCanonicalFile();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		if (args.length == 0) {
+			System.err.println("Usage: path/to/.git [--type=A,B,...] [--target=tag/commitId]");
 			return;
 		}
 		try (GitAnalyzer analyzer = new GitAnalyzer()) {
-			File dir = new File(args[0]).getCanonicalFile();
-			String target = (args.length == 2) ? args[1]: "HEAD";
 			File gitDir = ensureGitDir(dir);
 			if (gitDir != null) {
-				analyzer.parseGitRepository(gitDir, target);
+				analyzer.parseGitRepository(gitDir, target, types);
 			}
 		} catch (IOException e) {
 			 e.printStackTrace();
@@ -119,7 +141,7 @@ public class GitAnalyzer implements AutoCloseable {
 	 * @param gitDir is a .git directory.
 	 * @param target is a revision.
 	 */
-	public void parseGitRepository(File gitDir, String target) {
+	public void parseGitRepository(File gitDir, String target, HashSet<FileType> types) {
 		File dir = ensureGitDir(gitDir);
 		if (dir == null) return;
 
@@ -146,7 +168,7 @@ public class GitAnalyzer implements AutoCloseable {
 							while (walk.next()) {
 								String path = new String(walk.getRawPath());
 								FileType t = FileType.getFileType(path);
-								if (FileType.isSupported(t)) {
+								if (types.contains(t)) {
 									int lastModified =  lastModified(revForLastModified, repo, objId, path);
 									processFile(repo, path, t, walk.getObjectId(0), lastModified);
 								}

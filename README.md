@@ -22,8 +22,8 @@ The tool takes a file path to a git repository to be analyzed, for example:
 All code comments in source code are extracted from the HEAD revision of the specified repository.  
 An optional argument can choose a particular revision using a tag or a commit ID.
 
-        java -jar CommentLister.jar myapp/.git tag1
-        java -jar CommentLister.jar myapp/.git 502af45
+        java -jar CommentLister.jar myapp/.git --target=tag1
+        java -jar CommentLister.jar myapp/.git --target=502af45
 
 The tool reports comments in a JSON format.
 The entire output is an object including the following attributes:
