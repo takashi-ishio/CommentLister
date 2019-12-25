@@ -36,8 +36,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 public class GitAnalyzer implements AutoCloseable {
 
-	private static final String ARG_TARGET = "--target=";
-	private static final String ARG_TYPE = "--type=";
+	private static final String ARG_TARGET = "-target=";
+	private static final String ARG_TYPE = "-type=";
 	
 	/**
 	 * Extract all comments from Git directories.
@@ -65,7 +65,7 @@ public class GitAnalyzer implements AutoCloseable {
 		}
 		
 		if (args.length == 0) {
-			System.err.println("Usage: path/to/.git [--type=A,B,...] [--target=tag/commitId]");
+			System.err.println("Usage: path/to/.git [-type=A,B,...] [-target=tag/commitId]");
 			return;
 		}
 		try (GitAnalyzer analyzer = new GitAnalyzer()) {
