@@ -19,7 +19,7 @@ import jp.naist.se.commentlister.lexer.CPP14Lexer;
 import jp.naist.se.commentlister.lexer.CSharpLexer;
 import jp.naist.se.commentlister.lexer.ECMAScriptLexer;
 import jp.naist.se.commentlister.lexer.Java8Lexer;
-import jp.naist.se.commentlister.lexer.MakefileComment;
+import jp.naist.se.commentlister.lexer.MakefileCommentLexer;
 import jp.naist.se.commentlister.lexer.PhpLexer;
 import jp.naist.se.commentlister.lexer.Python3Lexer;
 import jp.naist.se.commentlister.ruby.RubyCommentReader;
@@ -208,11 +208,11 @@ public enum FileType {
 		}
 		case MAKEFILE:
 		{
-			MakefileComment lexer = new MakefileComment(stream);
+			MakefileCommentLexer lexer = new MakefileCommentLexer(stream);
 			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
 				@Override
 				public boolean accept(Token t) {
-					return t.getType() == MakefileComment.Line_comment;
+					return t.getType() == MakefileCommentLexer.Line_comment;
 				}
 			});
 		}
