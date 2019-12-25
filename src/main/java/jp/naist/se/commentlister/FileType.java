@@ -212,7 +212,7 @@ public enum FileType {
 			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
 				@Override
 				public boolean accept(Token t) {
-					return t.getType() == MakefileComment.COMMENT;
+					return t.getType() == MakefileComment.Line_comment;
 				}
 			});
 		}
