@@ -29,7 +29,12 @@ public class FileAnalyzer {
 	
 	public static void processFile(JsonGenerator gen, String path) throws IOException {
 		FileType t = FileType.getFileType(path);
-		byte[] content = Files.readAllBytes(new File(path).toPath());
+		File f = new File(path);
+		if (!f.canRead()) {
+			System.err.println(path + " is not readable");
+			return;
+		}
+		byte[] content = Files.readAllBytes(f.toPath());
 		CommentReader comments = FileType.createCommentReader(t, content);
 		if (comments == null) return;
 		gen.writeObjectFieldStart(path);
