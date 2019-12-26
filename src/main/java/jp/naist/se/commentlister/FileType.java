@@ -27,7 +27,7 @@ import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, MAKEFILE;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, QMAKE, MAKEFILE;
 
 	private static HashMap<String, FileType> filetype = new HashMap<>(64);
 	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
@@ -60,8 +60,8 @@ public enum FileType {
 		
 		filetype.put("rb", FileType.RUBY);
 
-		filetype.put("pro", FileType.MAKEFILE);	
-		filetype.put("pri", FileType.MAKEFILE);
+		filetype.put("pro", FileType.QMAKE);	
+		filetype.put("pri", FileType.QMAKE);
 
 		specialFileNames.put("CMakeLists.txt", FileType.CMAKE);	
 		specialFileNames.put("Makefile", FileType.MAKEFILE);	
@@ -74,6 +74,7 @@ public enum FileType {
 		specialFileNames.put("php", FileType.PHP);
 		specialFileNames.put("ruby", FileType.RUBY);
 		specialFileNames.put("cmake", FileType.CMAKE);
+		specialFileNames.put("qmake", FileType.QMAKE);
 		specialFileNames.put("makefile", FileType.MAKEFILE);
 	}
 	
@@ -207,6 +208,7 @@ public enum FileType {
 			return null;
 		}
 		case MAKEFILE:
+		case QMAKE:
 		{
 			MakefileCommentLexer lexer = new MakefileCommentLexer(stream);
 			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
@@ -272,6 +274,7 @@ public enum FileType {
 		types.add(FileType.PHP);
 		types.add(FileType.RUBY);
 		types.add(FileType.CMAKE);
+		types.add(FileType.QMAKE);
 		types.add(FileType.MAKEFILE);
 		return types;
 	}
