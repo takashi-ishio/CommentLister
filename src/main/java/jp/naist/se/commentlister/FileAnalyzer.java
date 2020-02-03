@@ -8,8 +8,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
 /**
- * For Debugging
- * @param args
+ * List all files and their tokens for debugging
+ * @param args specify repostiory directories
  */
 public class FileAnalyzer {
 
