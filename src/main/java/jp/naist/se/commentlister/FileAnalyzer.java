@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 /**
  * List all files and their tokens for debugging
- * @param args specify repostiory directories
+ * @param args specify source files
  */
 public class FileAnalyzer {
 
