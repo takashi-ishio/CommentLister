@@ -31,6 +31,8 @@ public enum FileType {
 
 	private static HashMap<String, FileType> filetype = new HashMap<>(64);
 	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
+	private static HashMap<String, FileType> typeNames = new HashMap<>();
+	
 	static {
 		filetype.put("c", FileType.CPP);
 		filetype.put("cc", FileType.CPP);
@@ -71,17 +73,18 @@ public enum FileType {
 		specialFileNames.put("pom.xml", FileType.MAVEN);
 		specialFileNames.put("build.xml", FileType.ANT);
 
-		specialFileNames.put("cpp", FileType.CPP);
-		specialFileNames.put("java", FileType.JAVA);
-		specialFileNames.put("ecmascript", FileType.ECMASCRIPT);
-		specialFileNames.put("csharp", FileType.CSHARP);
-		specialFileNames.put("python", FileType.PYTHON);
-		specialFileNames.put("php", FileType.PHP);
-		specialFileNames.put("ruby", FileType.RUBY);
-		specialFileNames.put("automake", FileType.AUTOMAKE);
-		specialFileNames.put("cmake", FileType.CMAKE);
-		specialFileNames.put("qmake", FileType.QMAKE);
-		specialFileNames.put("makefile", FileType.MAKEFILE);
+		typeNames.put("cpp", FileType.CPP);
+		typeNames.put("java", FileType.JAVA);
+		typeNames.put("ecmascript", FileType.ECMASCRIPT);
+		typeNames.put("csharp", FileType.CSHARP);
+		typeNames.put("python", FileType.PYTHON);
+		typeNames.put("php", FileType.PHP);
+		typeNames.put("ruby", FileType.RUBY);
+		typeNames.put("automake", FileType.AUTOMAKE);
+		typeNames.put("bazel", FileType.BAZEL);
+		typeNames.put("cmake", FileType.CMAKE);
+		typeNames.put("qmake", FileType.QMAKE);
+		typeNames.put("makefile", FileType.MAKEFILE);
 	}
 	
 	/**
@@ -303,6 +306,10 @@ public enum FileType {
 		}
 	}
 	
+	/**
+	 * @param args
+	 * @return file types to be analyzed
+	 */
 	public static HashSet<FileType> getFileTypes(String[] args) {
 		HashSet<FileType> types = new HashSet<>();
 		for (String arg: args) {
@@ -310,7 +317,11 @@ public enum FileType {
 			if (isSupported(t)) {
 				types.add(t);
 			}
-			t = specialFileNames.get(arg.toLowerCase());
+			t = typeNames.get(arg.toLowerCase());
+			if (isSupported(t)) {
+				types.add(t);
+			}
+			t = specialFileNames.get(arg);
 			if (isSupported(t)) {
 				types.add(t);
 			}
