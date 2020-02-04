@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -13,6 +12,7 @@ import org.antlr.v4.runtime.CaseChangingCharStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.Token;
+import org.apache.commons.io.IOUtils;
 
 import jp.naist.se.commentlister.lexer.CMakeLexer;
 import jp.naist.se.commentlister.lexer.CPP14Lexer;
@@ -27,7 +27,7 @@ import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, QMAKE, MAKEFILE;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, QMAKE, MAKEFILE, AUTOMAKE, BAZEL, ANT, MAVEN;
 
 	private static HashMap<String, FileType> filetype = new HashMap<>(64);
 	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
@@ -62,9 +62,14 @@ public enum FileType {
 
 		filetype.put("pro", FileType.QMAKE);	
 		filetype.put("pri", FileType.QMAKE);
+		filetype.put("bzl", FileType.BAZEL);
 
 		specialFileNames.put("CMakeLists.txt", FileType.CMAKE);	
 		specialFileNames.put("Makefile", FileType.MAKEFILE);	
+		specialFileNames.put("Makefile.am", FileType.AUTOMAKE);	
+		specialFileNames.put("BUILD", FileType.BAZEL);	
+		specialFileNames.put("pom.xml", FileType.MAVEN);
+		specialFileNames.put("build.xml", FileType.ANT);
 
 		specialFileNames.put("cpp", FileType.CPP);
 		specialFileNames.put("java", FileType.JAVA);
@@ -73,10 +78,34 @@ public enum FileType {
 		specialFileNames.put("python", FileType.PYTHON);
 		specialFileNames.put("php", FileType.PHP);
 		specialFileNames.put("ruby", FileType.RUBY);
+		specialFileNames.put("automake", FileType.AUTOMAKE);
 		specialFileNames.put("cmake", FileType.CMAKE);
 		specialFileNames.put("qmake", FileType.QMAKE);
 		specialFileNames.put("makefile", FileType.MAKEFILE);
 	}
+	
+	/**
+	 * This is a set of analyzed files by default
+	 */
+	public static HashSet<FileType> getAllTypes() {
+		HashSet<FileType> types = new HashSet<>();
+		types.add(FileType.CPP);
+		types.add(FileType.JAVA);
+		types.add(FileType.ECMASCRIPT);
+		types.add(FileType.CSHARP);
+		types.add(FileType.PYTHON);
+		types.add(FileType.PHP);
+		types.add(FileType.RUBY);
+		types.add(FileType.CMAKE);
+		types.add(FileType.QMAKE);
+		types.add(FileType.MAKEFILE);
+		types.add(FileType.AUTOMAKE);
+		types.add(FileType.BAZEL);
+		types.add(FileType.ANT);
+		types.add(FileType.MAVEN);
+		return types;
+	}
+
 	
 	public static FileType getFileType(String filename) {
 		// Remove directories 
@@ -182,6 +211,7 @@ public enum FileType {
 			});
 		}
 		case PYTHON:
+		case BAZEL:
 		{
 			Python3Lexer lexer = new Python3Lexer(stream);
 			return new AntlrMultilineCommentReader(lexer, new AntlrCommentReader.Filter() {
@@ -202,12 +232,8 @@ public enum FileType {
 				}
 			});
 		}
-		case RUBY:
-		{
-			// unsupported 
-			return null;
-		}
 		case MAKEFILE:
+		case AUTOMAKE:
 		case QMAKE:
 		{
 			MakefileCommentLexer lexer = new MakefileCommentLexer(stream);
@@ -229,6 +255,12 @@ public enum FileType {
 				}
 			});
 		}
+		case ANT:
+		case MAVEN:
+		case RUBY:
+		{
+			assert false: "Unsupported language for this method";
+		}
 		default:
 			return null;
 		
@@ -244,6 +276,11 @@ public enum FileType {
 	 */
 	public static CommentReader createCommentReader(FileType filetype, InputStream stream) {
 		try {
+			if (filetype == FileType.RUBY) {
+				return new RubyCommentReader(IOUtils.toByteArray(stream));
+			} else if (filetype == FileType.ANT || filetype == FileType.MAVEN) {
+				return new XmlCommentReader(stream);
+			}
 			return createReader(filetype, CharStreams.fromStream(stream));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -255,6 +292,8 @@ public enum FileType {
 		try {
 			if (filetype == FileType.RUBY) {
 				return new RubyCommentReader(buf);
+			} else if (filetype == FileType.ANT || filetype == FileType.MAVEN) {
+				return new XmlCommentReader(new ByteArrayInputStream(buf));
 			} else {
 				return createReader(filetype, createStream(buf));
 			}
@@ -262,21 +301,6 @@ public enum FileType {
 			e.printStackTrace();
 			return null;
 		}
-	}
-	
-	public static HashSet<FileType> getAllTypes() {
-		HashSet<FileType> types = new HashSet<>();
-		types.add(FileType.CPP);
-		types.add(FileType.JAVA);
-		types.add(FileType.ECMASCRIPT);
-		types.add(FileType.CSHARP);
-		types.add(FileType.PYTHON);
-		types.add(FileType.PHP);
-		types.add(FileType.RUBY);
-		types.add(FileType.CMAKE);
-		types.add(FileType.QMAKE);
-		types.add(FileType.MAKEFILE);
-		return types;
 	}
 	
 	public static HashSet<FileType> getFileTypes(String[] args) {
