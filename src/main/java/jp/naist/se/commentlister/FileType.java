@@ -82,6 +82,8 @@ public enum FileType {
 		typeNames.put("ruby", FileType.RUBY);
 		typeNames.put("automake", FileType.AUTOMAKE);
 		typeNames.put("bazel", FileType.BAZEL);
+		typeNames.put("ant", FileType.ANT);
+		typeNames.put("maven", FileType.MAVEN);
 		typeNames.put("cmake", FileType.CMAKE);
 		typeNames.put("qmake", FileType.QMAKE);
 		typeNames.put("makefile", FileType.MAKEFILE);
@@ -92,20 +94,7 @@ public enum FileType {
 	 */
 	public static HashSet<FileType> getAllTypes() {
 		HashSet<FileType> types = new HashSet<>();
-		types.add(FileType.CPP);
-		types.add(FileType.JAVA);
-		types.add(FileType.ECMASCRIPT);
-		types.add(FileType.CSHARP);
-		types.add(FileType.PYTHON);
-		types.add(FileType.PHP);
-		types.add(FileType.RUBY);
-		types.add(FileType.CMAKE);
-		types.add(FileType.QMAKE);
-		types.add(FileType.MAKEFILE);
-		types.add(FileType.AUTOMAKE);
-		types.add(FileType.BAZEL);
-		types.add(FileType.ANT);
-		types.add(FileType.MAVEN);
+		types.addAll(typeNames.values());
 		return types;
 	}
 
