@@ -109,7 +109,7 @@ public enum FileType {
 	
 	public static FileType getFileType(String filename) {
 		// Remove directories 
-		int index = filename.lastIndexOf(File.separator);
+		int index = filename.lastIndexOf('/');
 		filename = filename.substring(index+1);
 		
 		if (filename.startsWith("._")) { // Mac OS's backup file
