@@ -62,6 +62,7 @@ public enum FileType {
 		
 		filetype.put("rb", FileType.RUBY);
 
+		filetype.put("cmake", FileType.CMAKE);	
 		filetype.put("pro", FileType.QMAKE);	
 		filetype.put("pri", FileType.QMAKE);
 		filetype.put("bzl", FileType.BAZEL);
