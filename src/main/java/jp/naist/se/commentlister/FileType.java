@@ -125,6 +125,7 @@ public enum FileType {
 			type = filetype.get(ext.toLowerCase());
 		}
 		if (type != null) {
+			// Check ".h.cmake" files because they are CMAKE-related but the grammar is C.
 			if (type == FileType.CMAKE) {
 				String trimmed = filename.substring(0, index);
 				if (getFileType(trimmed) == FileType.CPP) {
