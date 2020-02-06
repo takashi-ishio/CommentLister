@@ -58,6 +58,7 @@ Escape_semicolon
 
 Quoted_argument
 	: '"' (~[\\"] | Escape_sequence | Quoted_cont)* '"'
+	| '\'' (~[\\'] | Escape_sequence | Quoted_cont)* '\''
 	;
 
 fragment
