@@ -27,7 +27,7 @@ import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 public enum FileType {
 
-	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, QMAKE, MAKEFILE, AUTOMAKE, BAZEL, ANT, MAVEN;
+	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, CMAKESOURCE, QMAKE, MAKEFILE, AUTOMAKE, BAZEL, ANT, MAVEN;
 
 	private static HashMap<String, FileType> filetype = new HashMap<>(64);
 	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
@@ -86,6 +86,7 @@ public enum FileType {
 		typeNames.put("ant", FileType.ANT);
 		typeNames.put("maven", FileType.MAVEN);
 		typeNames.put("cmake", FileType.CMAKE);
+		typeNames.put("cmakesource", FileType.CMAKESOURCE);
 		typeNames.put("qmake", FileType.QMAKE);
 		typeNames.put("makefile", FileType.MAKEFILE);
 	}
@@ -124,6 +125,13 @@ public enum FileType {
 			type = filetype.get(ext.toLowerCase());
 		}
 		if (type != null) {
+			if (type == FileType.CMAKE) {
+				String trimmed = filename.substring(0, index);
+				if (getFileType(trimmed) == FileType.CPP) {
+					return FileType.CMAKESOURCE;
+				}
+			}
+			
 			return type;
 		}
 		return FileType.UNSUPPORTED;
@@ -170,6 +178,7 @@ public enum FileType {
 			});
 		}
 		case CPP:
+		case CMAKESOURCE:
 		{
 			CPP14Lexer lexer = new CPP14Lexer(stream);
 			//CommonTokenStream c = new CommonTokenStream(lexer, Java8Lexer.HIDDEN);
