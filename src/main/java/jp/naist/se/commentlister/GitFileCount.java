@@ -28,7 +28,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
  * The program count the number of files that match the pattern.
  * The program accepts multiple patterns.
  */
-public class GitFileList implements AutoCloseable {
+public class GitFileCount implements AutoCloseable {
 
 	private static final String ARG_TARGET = "-target=";
 	private static final String ARG_FILE_PATTERN = "-f";
@@ -66,7 +66,7 @@ public class GitFileList implements AutoCloseable {
 			}
 		}
 		
-		try (GitFileList analyzer = new GitFileList(patterns)) {
+		try (GitFileCount analyzer = new GitFileCount(patterns)) {
 			File gitDir = ensureGitDir(dir);
 			if (gitDir != null) {
 				analyzer.parseGitRepository(gitDir, target);
@@ -81,7 +81,7 @@ public class GitFileList implements AutoCloseable {
 	private JsonGenerator gen;
 	private ArrayList<Counter> counters;
 
-	public GitFileList(ArrayList<String> patterns) throws IOException {
+	public GitFileCount(ArrayList<String> patterns) throws IOException {
 		counters = new ArrayList<>();
 		for (String p: patterns) {
 			counters.add(new Counter(p));

@@ -159,6 +159,29 @@ Simple execution (not an organized evaluation) on a workstation with Xeon E5-269
  - 1502 seconds for Gecko-dev git repository (90,000 files, 3.8 GB)
 
 
+## Utilities
+
+The project also contains two utilities.
+
+
+### FileAnalyzer to directly extract comments from source files
+
+This command takes file names as arguments and extracts comments from the files.
+
+     java -classpath CommentLister.jar jp.naist.se.commentlister.FileAnalyzer [source files]
+
+
+
+### GitFileList to count the number of files in a git repo
+
+This command takes a git repo and file patterns.
+
+     java -classpath CommentLister.jar jp.naist.se.commentlister.GitFileCount path/to/.git [-f pattern] [-target=tag/commitId]
+
+`-f pattern` specifies a wild card pattern like "*.java".
+The command accepts multiple patterns and reports the number of files for each pattern in the revision.
+
+
 ## Directory Structure
 
   - `src/main` is the main source directory.
