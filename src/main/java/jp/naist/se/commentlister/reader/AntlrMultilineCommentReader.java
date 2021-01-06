@@ -1,4 +1,4 @@
-package jp.naist.se.commentlister;
+package jp.naist.se.commentlister.reader;
 
 import java.util.ArrayList;
 
@@ -24,7 +24,15 @@ public class AntlrMultilineCommentReader implements CommentReader {
 			this.charPositionInLine = charpos;
 		}
 		
-		public boolean isContinue(String t, int l, int charpos) {
+		/**
+		 * A line comment is linked to the previous line comment 
+		 * if they are consecutive lines and start the same character position.
+		 * @param t 
+		 * @param l
+		 * @param charpos
+		 * @return
+		 */
+		public boolean isContinue(int l, int charpos) {
 			return (this.endLine == l) || (this.endLine + 1 == l && this.charPositionInLine == charpos);
 		}
 		
@@ -52,7 +60,7 @@ public class AntlrMultilineCommentReader implements CommentReader {
 		Comment lastComment = null;
 		for (Token t = lexer.nextToken(); t.getType() != Lexer.EOF; t = lexer.nextToken()) {
 			if (filter.accept(t)) {
-				if (lastComment != null && lastComment.isContinue(t.getText(), t.getLine(), t.getCharPositionInLine())) {
+				if (lastComment != null && lastComment.isContinue(t.getLine(), t.getCharPositionInLine())) {
 					lastComment.append(t.getText(), t.getLine());
 				} else {
 					lastComment = new Comment(t.getText(), t.getLine(), t.getCharPositionInLine());

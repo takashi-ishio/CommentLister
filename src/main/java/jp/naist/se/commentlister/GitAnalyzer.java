@@ -32,8 +32,13 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
+import jp.naist.se.commentlister.reader.CommentReader;
+import jp.naist.se.commentlister.reader.FileType;
 
 
+/**
+ * This main class extracts all comments from source files in a given git repository.
+ */
 public class GitAnalyzer implements AutoCloseable {
 
 	private static final String ARG_TARGET = "-target=";

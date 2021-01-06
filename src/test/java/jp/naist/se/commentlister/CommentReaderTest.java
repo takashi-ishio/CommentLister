@@ -4,6 +4,9 @@ package jp.naist.se.commentlister;
 import org.junit.Assert;
 import org.junit.Test;
 
+import jp.naist.se.commentlister.reader.CommentReader;
+import jp.naist.se.commentlister.reader.FileType;
+
 public class CommentReaderTest {
 
 	private int countComments(FileType t, String s) {

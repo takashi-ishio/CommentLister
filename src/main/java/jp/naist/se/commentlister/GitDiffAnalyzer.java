@@ -28,6 +28,9 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
+import jp.naist.se.commentlister.reader.CommentReader;
+import jp.naist.se.commentlister.reader.FileType;
+
 
 
 public class GitDiffAnalyzer implements AutoCloseable {

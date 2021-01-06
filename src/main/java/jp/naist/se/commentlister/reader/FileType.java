@@ -1,7 +1,6 @@
-package jp.naist.se.commentlister;
+package jp.naist.se.commentlister.reader;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -25,6 +24,9 @@ import jp.naist.se.commentlister.lexer.Python3Lexer;
 import jp.naist.se.commentlister.ruby.RubyCommentReader;
 
 
+/**
+ * Supported file types
+ */
 public enum FileType {
 
 	UNSUPPORTED, CPP, JAVA, ECMASCRIPT, CSHARP, PYTHON, PHP, RUBY, CMAKE, CMAKESOURCE, QMAKE, MAKEFILE, AUTOMAKE, BAZEL, ANT, MAVEN;
@@ -32,7 +34,10 @@ public enum FileType {
 	private static HashMap<String, FileType> filetype = new HashMap<>(64);
 	private static HashMap<String, FileType> specialFileNames = new HashMap<>();
 	private static HashMap<String, FileType> typeNames = new HashMap<>();
-	
+
+	/**
+	 * Create a map from file extensions to file types   
+	 */
 	static {
 		filetype.put("c", FileType.CPP);
 		filetype.put("cc", FileType.CPP);
@@ -100,7 +105,11 @@ public enum FileType {
 		return types;
 	}
 
-	
+	/**
+	 * This method extracts a file type from a filename. 
+	 * @param filename
+	 * @return a file type object.
+	 */
 	public static FileType getFileType(String filename) {
 		// Remove directories 
 		int index = filename.lastIndexOf('/');
@@ -166,6 +175,13 @@ public enum FileType {
 		}
 	}
 	
+	/**
+	 * Create a CommentReader instance for a given file type.
+	 * @param filetype specifies a file type.
+	 * @param stream is the content of a file.
+	 * @return an instance of CommentReader.
+	 * This method may return null if the language is not supported by this method.
+	 */
 	private static CommentReader createReader(FileType filetype, CharStream stream) {
 		switch (filetype) {
 		case JAVA:
@@ -272,10 +288,10 @@ public enum FileType {
 
 	/**
 	 * This method is prepared to handle "LargeObject" in a git repository.
-	 * This method currently does not support Ruby files.
-	 * @param filetype
-	 * @param stream
-	 * @return
+	 * @param filetype specifies the file type
+	 * @param stream specifies the content of the file
+	 * @return a CommentReader instance.
+	 * This may return null if an error occured during the process. 
 	 */
 	public static CommentReader createCommentReader(FileType filetype, InputStream stream) {
 		try {
@@ -291,6 +307,13 @@ public enum FileType {
 		}
 	}
 
+	/**
+	 * This method creates a CommentReader for a file 
+	 * @param filetype specifies the file type
+	 * @param buf specifies the content of the file
+	 * @return a CommentReader instance.
+	 * This may return null if an error occured during the process. 
+	 */
 	public static CommentReader createCommentReader(FileType filetype, byte[] buf) {
 		try {
 			if (filetype == FileType.RUBY) {

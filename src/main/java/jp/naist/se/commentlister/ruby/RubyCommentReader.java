@@ -6,10 +6,18 @@ import org.jruby.embed.EmbedEvalUnit;
 import org.jruby.embed.ScriptingContainer;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import jp.naist.se.commentlister.CommentReader;
+import jp.naist.se.commentlister.reader.CommentReader;
 
+/**
+ * This class extracts comments from a ruby file using JRuby and a Ruby script with Ripper.
+ * We did not use a grammar on ANTLR4 grammar repo because the grammar file did not 
+ * support the full language grammar at that moment. 
+ */
 public class RubyCommentReader implements CommentReader {
 
+	/**
+	 * Internal object to record a comment 
+	 */
 	public static class Comment {
 		private String text;
 		private int line;
@@ -25,6 +33,10 @@ public class RubyCommentReader implements CommentReader {
 	private Comment[] comments;
 	private int index = -1;
 	
+	/**
+	 * Read comments from a Ruby source file
+	 * @param source is the content of the source file
+	 */
 	public RubyCommentReader(byte[] source) {
 		ScriptingContainer container = new ScriptingContainer();
 		

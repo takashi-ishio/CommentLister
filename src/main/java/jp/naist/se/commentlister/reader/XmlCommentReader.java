@@ -1,4 +1,4 @@
-package jp.naist.se.commentlister;
+package jp.naist.se.commentlister.reader;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -8,6 +8,10 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+
+/**
+ * This reader extracts comments in an XML file
+ */
 public class XmlCommentReader implements CommentReader {
 
 	private ArrayList<String> text;
@@ -47,6 +51,7 @@ public class XmlCommentReader implements CommentReader {
 	
 	/**
 	 * This position points to the end of the comment
+	 * due to the limitation of XML Reader
 	 */
 	public int getCharPositionInLine() {
 		return locations.get(index).getColumnNumber();

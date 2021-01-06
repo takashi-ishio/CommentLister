@@ -7,8 +7,11 @@ import java.nio.file.Files;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
+import jp.naist.se.commentlister.reader.CommentReader;
+import jp.naist.se.commentlister.reader.FileType;
+
 /**
- * List all files and their tokens for debugging
+ * This main class extracts comments from source files listed in command line arguments.
  * @param args specify source files
  */
 public class FileAnalyzer {
