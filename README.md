@@ -197,3 +197,4 @@ The command accepts multiple patterns and reports the number of files for each p
  - [ANTLR4](http://www.antlr.org/index.html) to extract comments from source code
  - [Jackson Core](https://github.com/FasterXML/jackson-core) to generate a JSON file
  - [JRuby](http://jruby.org/) to parse Ruby source files
+ - [Apache Commons IO](https://commons.apache.org/proper/commons-io/) to translate a stream to a byte array 
