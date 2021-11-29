@@ -1,11 +1,17 @@
 # Comment Lister: Code Comment Listing Tool for Git repository
 
 This tool automatically extracts comment in source code stored in a git repository.
-The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, Ruby, and C#. 
+The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, Ruby, and C#.
+The tool also supports comments in build files: Makefiles (CMake, QMake, Automake), Bazel, Ant, and Maven.
 
-This tool has been developed for writing the following paper: 
+This tool has been developed for writing the following papers: 
 > Hideaki Hata, Christophe Treude, Raula Gaikovina Kula, Takashi Ishio:
-> 9.6 million links in source code comments: purpose, evolution, and decay (ICSE 2019)
+> 9.6 million links in source code comments: purpose, evolution, and decay
+> https://doi.org/10.1109/ICSE.2019.00123 
+
+> Tao Xiao, Dong Wang, Shane Mcintosh, Hideaki Hata, Raula Gaikovina Kula, Takashi Ishio, Kenichi Matsumoto:
+> Characterizing and Mitigating Self-Admitted Technical Debt in Build Systems
+> https://doi.org/10.1109/TSE.2021.3115772
 
 ## Build
 
