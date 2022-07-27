@@ -1,6 +1,7 @@
 package jp.naist.se.commentlister.reader;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -112,19 +113,20 @@ public enum FileType {
 	 */
 	public static FileType getFileType(String filename) {
 		// Remove directories 
-		int index = filename.lastIndexOf('/');
-		filename = filename.substring(index+1);
+		File f = new File(filename);
+		filename = f.getName();
 		
 		if (filename.startsWith("._")) { // Mac OS's backup file
 			return FileType.UNSUPPORTED;
 		}
+		System.out.println(filename);
 		
 		// Check special names
 		FileType t = specialFileNames.get(filename);
 		if (t != null) return t;
 		
 		// Check extensions
-		index = filename.lastIndexOf('.');
+		int index = filename.lastIndexOf('.');
 		if (index < 0) {
 			return FileType.UNSUPPORTED;
 		}
