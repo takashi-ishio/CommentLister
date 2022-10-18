@@ -119,7 +119,6 @@ public enum FileType {
 		if (filename.startsWith("._")) { // Mac OS's backup file
 			return FileType.UNSUPPORTED;
 		}
-		System.out.println(filename);
 		
 		// Check special names
 		FileType t = specialFileNames.get(filename);
