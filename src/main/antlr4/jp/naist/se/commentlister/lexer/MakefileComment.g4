@@ -38,7 +38,7 @@ Unquoted_argument
 	;
 
 Escape_sequence
-	: Escape_identity | Escape_encoded | Escape_semicolon
+	: Escape_identity | Escape_encoded | Escape_semicolon | Escape_regex
 	;
 
 fragment
@@ -54,6 +54,11 @@ Escape_encoded
 fragment
 Escape_semicolon
 	: '\\;'
+	;
+
+fragment
+Escape_regex
+	: '\\s'
 	;
 
 Quoted_argument
