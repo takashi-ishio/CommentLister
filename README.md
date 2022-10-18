@@ -1,6 +1,6 @@
 # Comment Lister: Code Comment Listing Tool for Git repository
 
-This tool automatically extracts comment in source code stored in a git repository.
+This tool automatically extracts comment in source code stored in a directory or a git repository.
 The supported programming langauges are: C/C++14, Java8, ECMAScript, Python3, PHP, Ruby, and C#.
 The tool also supports comments in build files: Makefiles (CMake, QMake, Automake), Bazel, Ant, and Maven.
 
@@ -173,9 +173,11 @@ The project also contains two utilities.
 ### FileAnalyzer to directly extract comments from source files
 
 This command takes file names as arguments and extracts comments from the files.
+Here is an example to extract comments from source files in `src` directory.
 
-     java -classpath CommentLister.jar jp.naist.se.commentlister.FileAnalyzer [source files]
+     java -classpath CommentLister.jar jp.naist.se.commentlister.FileAnalyzer src
 
+You can specify multiple file and directory names in a single command line.
 
 
 ### GitFileList to count the number of files in a git repo
