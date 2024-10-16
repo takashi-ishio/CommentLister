@@ -18,6 +18,8 @@ This tool has been developed for writing the following papers:
 The project uses Maven.  
 You can make a runnable jar `CommentLister.jar` by executing `mvn package`. 
 
+The build process requires JDK 11+ because dependent packages use JDK 11.
+
 
 ## Usage of Comment Extraction
 
